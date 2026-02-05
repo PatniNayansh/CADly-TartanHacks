@@ -1144,6 +1144,18 @@ def fillet_specific_edges(edge_indices: list, radius: float):
         logging.error("fillet_specific_edges failed: %s", e)
         raise
 
+@mcp.tool()
+def execute_script(code: str):
+    """Execute Python code inside Fusion 360. Variables available: adsk, app, design, rootComp, ui, result (dict for return data)."""
+    try:
+        endpoint = config.ENDPOINTS["execute_script"]
+        payload = {"code": code}
+        response = requests.post(endpoint, json.dumps(payload), config.HEADERS, timeout=35)
+        return response.json()
+    except Exception as e:
+        logging.error("execute_script failed: %s", e)
+        raise
+
 
 if __name__ == "__main__":
 

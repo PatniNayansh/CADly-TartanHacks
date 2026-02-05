@@ -196,6 +196,26 @@ class TaskEventHandler(adsk.core.CustomEventHandler):
         elif task[0] == 'fillet_specific_edges':
             _fillet_specific_edges(design, ui, task[1], task[2])
 
+        # Execute arbitrary script (synchronous query pattern)
+        elif task[0] == 'execute_script':
+            query_id = task[1]
+            code = task[2]
+            try:
+                result = {}
+                exec_scope = {
+                    'adsk': adsk,
+                    'app': app,
+                    'design': design,
+                    'rootComp': design.rootComponent,
+                    'ui': ui,
+                    'result': result,
+                }
+                exec(code, exec_scope)
+                query_results[query_id] = exec_scope['result']
+            except Exception as e:
+                query_results[query_id] = {"error": str(e), "traceback": traceback.format_exc()}
+            if query_id in query_events:
+                query_events[query_id].set()
 
 
 class TaskThread(threading.Thread):
@@ -2071,6 +2091,25 @@ class Handler(BaseHTTPRequestHandler):
                 radius = float(data.get('radius', 0.15))  # default 1.5mm = 0.15cm
                 task_queue.put(('fillet_specific_edges', edge_indices, radius))
                 self._send_json({"message": "Fillet wird auf ausgewählte Kanten angewendet"})
+
+            # Execute script endpoint (synchronous — waits for result)
+            elif path == '/execute_script':
+                code = data.get('code', '')
+                if not code:
+                    self._send_json({"error": "No code provided"})
+                else:
+                    query_id = str(uuid.uuid4())
+                    event = threading.Event()
+                    query_events[query_id] = event
+                    task_queue.put(('execute_script', query_id, code))
+                    if event.wait(timeout=30):
+                        result_data = query_results.pop(query_id, {"error": "No result"})
+                        query_events.pop(query_id, None)
+                        self._send_json(result_data)
+                    else:
+                        query_events.pop(query_id, None)
+                        query_results.pop(query_id, None)
+                        self._send_json({"error": "Script execution timed out (30s)"})
 
             else:
                 self.send_error(404,'Not Found')

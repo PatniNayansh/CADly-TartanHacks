@@ -65,7 +65,10 @@
 
         <!-- Violations List -->
         <div class="section" id="violationsSection" style="display: none;">
-            <h2 class="section-title">Violations</h2>
+            <div class="section-header">
+                <h2 class="section-title">Violations</h2>
+                <button class="btn-fix-all" id="fixAllBtn" onclick="fixAll()" style="display:none;">Fix All</button>
+            </div>
             <div class="violations-list" id="violationsList"></div>
         </div>
 

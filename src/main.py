@@ -12,6 +12,9 @@ import logging
 from src.dfm.analyzer import DFMAnalyzer
 from src.dfm.violations import Severity
 from src.cost.estimator import CostEstimator
+from src.fixes.corner_fix import apply_corner_fix, apply_corner_fix_batch
+from src.fixes.hole_fix import apply_hole_fix
+from src.fixes.wall_fix import apply_wall_fix
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -70,6 +73,7 @@ async def fix(request: Request):
         rule_id = body.get("rule_id", "")
         feature_id = body.get("feature_id", "")
         target_value = body.get("target_value", None)
+        current_value = body.get("current_value", 0)
     except Exception:
         return JSONResponse(
             status_code=400,
@@ -77,27 +81,29 @@ async def fix(request: Request):
         )
 
     try:
-        if rule_id.startswith("CNC-001"):
-            # Fix internal corner radius → add fillet
-            edge_idx = int(feature_id.split("_")[1]) if "edge_" in feature_id else 0
-            radius_cm = (target_value or 1.5) / 10.0  # mm to cm
-            resp = requests.post(
-                f"{FUSION_URL}/fillet_specific_edges",
-                json={"edge_indices": [edge_idx], "radius": radius_cm},
-                timeout=15,
+        if rule_id == "CNC-001":
+            result = apply_corner_fix(
+                feature_id=feature_id,
+                target_radius_mm=target_value or 1.5,
             )
-            return {"success": True, "message": f"Added {target_value or 1.5}mm fillet to edge {edge_idx}"}
-
-        elif rule_id.startswith("FDM-001") or rule_id.startswith("SLA-001"):
-            # Wall thickness fix - would need shell/extrude modification
-            return {"success": False, "message": "Wall thickness fix not yet implemented. Modify sketch dimensions manually."}
-
-        elif rule_id == "GEN-001":
-            # Hole size standardization - would need hole feature modification
-            return {"success": False, "message": "Hole resize not yet implemented. Modify hole diameter manually."}
-
+        elif rule_id in ("GEN-001", "FDM-003"):
+            result = apply_hole_fix(
+                feature_id=feature_id,
+                current_diameter_mm=current_value,
+                target_diameter_mm=target_value,
+                rule_id=rule_id,
+            )
+        elif rule_id in ("FDM-001", "SLA-001"):
+            result = apply_wall_fix(
+                feature_id=feature_id,
+                current_thickness_mm=current_value,
+                target_thickness_mm=target_value or 2.0,
+                rule_id=rule_id,
+            )
         else:
             return {"success": False, "message": f"No auto-fix available for {rule_id}"}
+
+        return result.to_dict()
 
     except Exception as e:
         logger.error(f"Fix failed: {e}")
@@ -105,6 +111,92 @@ async def fix(request: Request):
             status_code=500,
             content={"success": False, "error": str(e)}
         )
+
+
+@app.post("/api/fix-all")
+async def fix_all(request: Request):
+    """Apply all fixable violations in optimal order: holes → walls → corners."""
+    try:
+        body = await request.json() if await request.body() else {}
+        process = body.get("process", "all")
+    except Exception:
+        process = "all"
+
+    # Run analysis to get current violations
+    analyzer = DFMAnalyzer(FUSION_URL)
+    analysis = analyzer.analyze(process)
+
+    fixable = [v for v in analysis.violations if v.fixable]
+    if not fixable:
+        return {"success": True, "message": "No fixable violations found", "results": []}
+
+    # Group and deduplicate
+    hole_fixes = {}
+    wall_fixes = {}
+    corner_edges = []
+    corner_radius = 1.5
+
+    for v in fixable:
+        if v.rule_id in ("GEN-001", "FDM-003"):
+            key = v.feature_id
+            if key not in hole_fixes or v.required_value > hole_fixes[key]["target"]:
+                hole_fixes[key] = {
+                    "rule_id": v.rule_id,
+                    "current": v.current_value,
+                    "target": v.required_value,
+                }
+        elif v.rule_id in ("FDM-001", "SLA-001"):
+            key = v.feature_id
+            if key not in wall_fixes or v.required_value > wall_fixes[key]["target"]:
+                wall_fixes[key] = {
+                    "rule_id": v.rule_id,
+                    "current": v.current_value,
+                    "target": v.required_value,
+                }
+        elif v.rule_id == "CNC-001":
+            # Skip circle edges (current_value > 0 means it already has a radius)
+            if v.current_value > 0:
+                continue
+            edge_idx = int(v.feature_id.split("_")[1])
+            corner_edges.append(edge_idx)
+            corner_radius = max(corner_radius, v.required_value)
+
+    results = []
+
+    # Phase 1: Holes (parameter changes, stable topology)
+    for fid, info in hole_fixes.items():
+        result = apply_hole_fix(
+            feature_id=fid,
+            current_diameter_mm=info["current"],
+            target_diameter_mm=info["target"],
+            rule_id=info["rule_id"],
+        )
+        results.append(result.to_dict())
+
+    # Phase 2: Walls (parameter changes, may shift faces)
+    for fid, info in wall_fixes.items():
+        result = apply_wall_fix(
+            feature_id=fid,
+            current_thickness_mm=info["current"],
+            target_thickness_mm=info["target"],
+            rule_id=info["rule_id"],
+        )
+        results.append(result.to_dict())
+
+    # Phase 3: Corners last (fillets change edge indices)
+    if corner_edges:
+        result = apply_corner_fix_batch(
+            edge_indices=corner_edges,
+            target_radius_mm=corner_radius,
+        )
+        results.append(result.to_dict())
+
+    succeeded = sum(1 for r in results if r["success"])
+    return {
+        "success": succeeded > 0,
+        "message": f"Applied {succeeded}/{len(results)} fixes successfully",
+        "results": results,
+    }
 
 
 @app.get("/api/cost")

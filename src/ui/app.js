@@ -96,6 +96,7 @@ function renderSummary(data) {
 function renderViolations(violations) {
     const section = document.getElementById('violationsSection');
     const list = document.getElementById('violationsList');
+    const fixAllBtn = document.getElementById('fixAllBtn');
     section.style.display = 'block';
     list.innerHTML = '';
 
@@ -106,8 +107,13 @@ function renderViolations(violations) {
                 <p>No manufacturing issues found!</p>
             </div>
         `;
+        if (fixAllBtn) fixAllBtn.style.display = 'none';
         return;
     }
+
+    // Show/hide Fix All button
+    const hasFixable = violations.some(v => v.fixable);
+    if (fixAllBtn) fixAllBtn.style.display = hasFixable ? 'inline-block' : 'none';
 
     // Sort: critical first, then warning, then suggestion
     const order = { critical: 0, warning: 1, suggestion: 2 };
@@ -126,7 +132,7 @@ function renderViolations(violations) {
                 <span>Current: <strong>${formatValue(v.current_value, v.rule_id)}</strong></span>
                 <span>Required: <strong>${formatValue(v.required_value, v.rule_id)}</strong></span>
             </div>
-            ${v.fixable ? `<button class="btn-fix" onclick="applyFix('${v.rule_id}', '${v.feature_id}', ${v.required_value})">Auto-Fix</button>` : ''}
+            ${v.fixable ? `<button class="btn-fix" onclick="applyFix('${v.rule_id}', '${v.feature_id}', ${v.required_value}, ${v.current_value})">Auto-Fix</button>` : ''}
         `;
         list.appendChild(card);
     });
@@ -173,7 +179,7 @@ function renderCost(data) {
     });
 }
 
-async function applyFix(ruleId, featureId, targetValue) {
+async function applyFix(ruleId, featureId, targetValue, currentValue) {
     const btn = event.target;
     const originalText = btn.textContent;
     btn.textContent = 'Fixing...';
@@ -187,6 +193,7 @@ async function applyFix(ruleId, featureId, targetValue) {
                 rule_id: ruleId,
                 feature_id: featureId,
                 target_value: targetValue,
+                current_value: currentValue,
             }),
         });
         const data = await resp.json();
@@ -202,6 +209,37 @@ async function applyFix(ruleId, featureId, targetValue) {
         }
     } catch (err) {
         showToast(`Fix error: ${err.message}`, 'error');
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
+
+async function fixAll() {
+    const btn = document.getElementById('fixAllBtn');
+    const originalText = btn.textContent;
+    btn.textContent = 'Fixing All...';
+    btn.disabled = true;
+
+    try {
+        const process = document.getElementById('processFilter').value;
+        const resp = await fetch(`${API_BASE}/api/fix-all`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ process }),
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+            showToast(data.message, 'success');
+        } else {
+            showToast(data.message || 'Fix-all failed', 'error');
+        }
+
+        // Re-analyze after fixes
+        setTimeout(runAnalysis, 2000);
+    } catch (err) {
+        showToast(`Fix-all error: ${err.message}`, 'error');
+    } finally {
         btn.textContent = originalText;
         btn.disabled = false;
     }

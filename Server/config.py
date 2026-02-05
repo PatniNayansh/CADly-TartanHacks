@@ -50,6 +50,7 @@ ENDPOINTS = {
 
     # DFM Fix endpoints
     "fillet_specific_edges": f"{BASE_URL}/fillet_specific_edges",
+    "execute_script": f"{BASE_URL}/execute_script",
 }
 
 # Request Headers
