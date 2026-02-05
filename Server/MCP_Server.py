@@ -1074,6 +1074,77 @@ def kompensator():
 
 
 
+##############################################################################################
+### DFM Geometry Query Tools ###
+
+@mcp.tool()
+def get_body_properties():
+    """Get properties of all bodies in the current design: volume (cm³), surface area (cm²), bounding box, face count, edge count."""
+    try:
+        endpoint = config.ENDPOINTS["get_body_properties"]
+        response = requests.get(endpoint, timeout=20)
+        return response.json()
+    except Exception as e:
+        logging.error("get_body_properties failed: %s", e)
+        raise
+
+@mcp.tool()
+def get_faces_info():
+    """Get detailed info for each face of the latest body: type (plane/cylinder/cone/sphere/torus), area, normal vector, radius, centroid."""
+    try:
+        endpoint = config.ENDPOINTS["get_faces_info"]
+        response = requests.get(endpoint, timeout=20)
+        return response.json()
+    except Exception as e:
+        logging.error("get_faces_info failed: %s", e)
+        raise
+
+@mcp.tool()
+def get_edges_info():
+    """Get detailed info for each edge of the latest body: type (line/circle/arc), length, radius, start/end points, concavity, angle between adjacent faces."""
+    try:
+        endpoint = config.ENDPOINTS["get_edges_info"]
+        response = requests.get(endpoint, timeout=20)
+        return response.json()
+    except Exception as e:
+        logging.error("get_edges_info failed: %s", e)
+        raise
+
+@mcp.tool()
+def analyze_walls():
+    """Analyze wall thickness by finding parallel face pairs. Returns wall thickness in mm and identifies thin walls."""
+    try:
+        endpoint = config.ENDPOINTS["analyze_walls"]
+        response = requests.get(endpoint, timeout=20)
+        return response.json()
+    except Exception as e:
+        logging.error("analyze_walls failed: %s", e)
+        raise
+
+@mcp.tool()
+def analyze_holes():
+    """Detect holes by finding cylindrical faces. Returns hole diameter (mm), depth (mm), and depth-to-diameter ratio."""
+    try:
+        endpoint = config.ENDPOINTS["analyze_holes"]
+        response = requests.get(endpoint, timeout=20)
+        return response.json()
+    except Exception as e:
+        logging.error("analyze_holes failed: %s", e)
+        raise
+
+@mcp.tool()
+def fillet_specific_edges(edge_indices: list, radius: float):
+    """Add fillet to specific edges by their index. Radius is in cm (Fusion units). Use for fixing sharp internal corners."""
+    try:
+        endpoint = config.ENDPOINTS["fillet_specific_edges"]
+        payload = {"edge_indices": edge_indices, "radius": radius}
+        headers = config.HEADERS
+        return send_request(endpoint, payload, headers)
+    except Exception as e:
+        logging.error("fillet_specific_edges failed: %s", e)
+        raise
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()

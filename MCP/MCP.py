@@ -8,10 +8,15 @@ import queue
 from pathlib import Path
 import math
 import os
+import uuid
 
 ModelParameterSnapshot = []
 httpd = None
 task_queue = queue.Queue()  # Queue für thread-safe Aktionen
+
+# Query results for synchronous geometry queries
+query_results = {}
+query_events = {}
 
 # Event Handler Variablen
 app = None
@@ -135,7 +140,62 @@ class TaskEventHandler(adsk.core.CustomEventHandler):
             draw_text(design, ui, task[1], task[2], task[3], task[4], task[5], task[6], task[7], task[8], task[9],task[10])
         elif task[0] == 'move_body':
             move_last_body(design,ui,task[1],task[2],task[3])
-        
+
+        # DFM Geometry Query tasks (return results via query_events)
+        elif task[0] == 'get_body_properties':
+            query_id = task[1]
+            try:
+                data = _get_body_properties(design)
+                query_results[query_id] = data
+            except Exception as e:
+                query_results[query_id] = {"error": str(e)}
+            if query_id in query_events:
+                query_events[query_id].set()
+
+        elif task[0] == 'get_faces_info':
+            query_id = task[1]
+            try:
+                data = _get_faces_info(design)
+                query_results[query_id] = data
+            except Exception as e:
+                query_results[query_id] = {"error": str(e)}
+            if query_id in query_events:
+                query_events[query_id].set()
+
+        elif task[0] == 'get_edges_info':
+            query_id = task[1]
+            try:
+                data = _get_edges_info(design)
+                query_results[query_id] = data
+            except Exception as e:
+                query_results[query_id] = {"error": str(e)}
+            if query_id in query_events:
+                query_events[query_id].set()
+
+        elif task[0] == 'analyze_walls':
+            query_id = task[1]
+            try:
+                data = _analyze_walls(design)
+                query_results[query_id] = data
+            except Exception as e:
+                query_results[query_id] = {"error": str(e)}
+            if query_id in query_events:
+                query_events[query_id].set()
+
+        elif task[0] == 'analyze_holes':
+            query_id = task[1]
+            try:
+                data = _analyze_holes(design)
+                query_results[query_id] = data
+            except Exception as e:
+                query_results[query_id] = {"error": str(e)}
+            if query_id in query_events:
+                query_events[query_id].set()
+
+        # DFM Fix tasks
+        elif task[0] == 'fillet_specific_edges':
+            _fillet_specific_edges(design, ui, task[1], task[2])
+
 
 
 class TaskThread(threading.Thread):
@@ -1279,27 +1339,356 @@ def select_sketch(design,ui,Sketchname):
 
         return target_sketch
 
-    except : 
+    except :
         if ui :
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
 
+##############################################################################################
+### DFM Geometry Query Functions ###
+
+def _get_body_properties(design):
+    """Get volume, area, bounding box, and face/edge counts for all bodies."""
+    rootComp = design.rootComponent
+    bodies = rootComp.bRepBodies
+    result = []
+    for i in range(bodies.count):
+        body = bodies.item(i)
+        bbox = body.boundingBox
+        result.append({
+            "name": body.name,
+            "index": i,
+            "volume_cm3": round(body.volume, 6),
+            "area_cm2": round(body.area, 6),
+            "face_count": body.faces.count,
+            "edge_count": body.edges.count,
+            "bounding_box": {
+                "min": [bbox.minPoint.x, bbox.minPoint.y, bbox.minPoint.z],
+                "max": [bbox.maxPoint.x, bbox.maxPoint.y, bbox.maxPoint.z]
+            }
+        })
+    return {"bodies": result}
+
+
+def _get_faces_info(design):
+    """Get type, area, normal, and centroid for each face of the latest body."""
+    rootComp = design.rootComponent
+    bodies = rootComp.bRepBodies
+    if bodies.count == 0:
+        return {"faces": [], "body_name": ""}
+
+    body = bodies.item(bodies.count - 1)
+    faces = []
+    for i in range(body.faces.count):
+        face = body.faces.item(i)
+        geom = face.geometry
+
+        face_type = "other"
+        if isinstance(geom, adsk.core.Plane):
+            face_type = "plane"
+        elif isinstance(geom, adsk.core.Cylinder):
+            face_type = "cylinder"
+        elif isinstance(geom, adsk.core.Cone):
+            face_type = "cone"
+        elif isinstance(geom, adsk.core.Sphere):
+            face_type = "sphere"
+        elif isinstance(geom, adsk.core.Torus):
+            face_type = "torus"
+
+        face_data = {
+            "index": i,
+            "type": face_type,
+            "area_cm2": round(face.area, 6),
+        }
+
+        # Normal for planar faces
+        if face_type == "plane":
+            n = geom.normal
+            face_data["normal"] = [round(n.x, 6), round(n.y, 6), round(n.z, 6)]
+
+        # Radius for cylindrical faces (hole detection)
+        if face_type == "cylinder":
+            face_data["radius_cm"] = round(geom.radius, 6)
+
+        # Centroid
+        try:
+            pt = face.pointOnFace
+            face_data["centroid"] = [round(pt.x, 4), round(pt.y, 4), round(pt.z, 4)]
+        except:
+            face_data["centroid"] = [0, 0, 0]
+
+        faces.append(face_data)
+
+    return {"faces": faces, "body_name": body.name}
+
+
+def _get_edges_info(design):
+    """Get type, length, radius, and concavity for each edge of the latest body."""
+    rootComp = design.rootComponent
+    bodies = rootComp.bRepBodies
+    if bodies.count == 0:
+        return {"edges": [], "body_name": ""}
+
+    body = bodies.item(bodies.count - 1)
+    edges = []
+    for i in range(body.edges.count):
+        edge = body.edges.item(i)
+        geom = edge.geometry
+
+        edge_type = "other"
+        if isinstance(geom, adsk.core.Line3D):
+            edge_type = "line"
+        elif isinstance(geom, adsk.core.Circle3D):
+            edge_type = "circle"
+        elif isinstance(geom, adsk.core.Arc3D):
+            edge_type = "arc"
+
+        edge_data = {
+            "index": i,
+            "type": edge_type,
+            "length_cm": round(edge.length, 6),
+        }
+
+        # Start/end points
+        try:
+            sv = edge.startVertex.geometry
+            ev = edge.endVertex.geometry
+            edge_data["start"] = [round(sv.x, 4), round(sv.y, 4), round(sv.z, 4)]
+            edge_data["end"] = [round(ev.x, 4), round(ev.y, 4), round(ev.z, 4)]
+        except:
+            edge_data["start"] = [0, 0, 0]
+            edge_data["end"] = [0, 0, 0]
+
+        # Radius for circular/arc edges
+        if edge_type in ("circle", "arc"):
+            edge_data["radius_cm"] = round(geom.radius, 6)
+
+        # Concavity check
+        try:
+            adj_faces = edge.faces
+            if adj_faces.count == 2:
+                f1 = adj_faces.item(0)
+                f2 = adj_faces.item(1)
+                mid = edge.pointOnEdge
+                (_, n1) = f1.evaluator.getNormalAtPoint(mid)
+                (_, n2) = f2.evaluator.getNormalAtPoint(mid)
+                dot = n1.x * n2.x + n1.y * n2.y + n1.z * n2.z
+                dot = max(-1.0, min(1.0, dot))
+                angle = math.degrees(math.acos(dot))
+                edge_data["angle_deg"] = round(angle, 1)
+                # Concave = internal corner (normals point toward each other)
+                # Use edge tangent cross n1 to determine concavity
+                try:
+                    (_, tangent) = edge.evaluator.getTangent(0.5)
+                    cross = adsk.core.Vector3D.create(
+                        n1.y * tangent.z - n1.z * tangent.y,
+                        n1.z * tangent.x - n1.x * tangent.z,
+                        n1.x * tangent.y - n1.y * tangent.x
+                    )
+                    concave_dot = cross.x * n2.x + cross.y * n2.y + cross.z * n2.z
+                    edge_data["is_concave"] = concave_dot < 0
+                except:
+                    edge_data["is_concave"] = False
+        except:
+            edge_data["angle_deg"] = 0
+            edge_data["is_concave"] = False
+
+        edges.append(edge_data)
+
+    return {"edges": edges, "body_name": body.name}
+
+
+def _analyze_walls(design):
+    """Find parallel face pairs and measure wall thickness."""
+    rootComp = design.rootComponent
+    bodies = rootComp.bRepBodies
+    if bodies.count == 0:
+        return {"walls": []}
+
+    body = bodies.item(bodies.count - 1)
+    faces = body.faces
+
+    # Collect planar faces with their normals
+    planar_faces = []
+    for i in range(faces.count):
+        face = faces.item(i)
+        if isinstance(face.geometry, adsk.core.Plane):
+            n = face.geometry.normal
+            planar_faces.append((i, face, n))
+
+    walls = []
+    checked = set()
+    for idx1 in range(len(planar_faces)):
+        i, f1, n1 = planar_faces[idx1]
+        for idx2 in range(idx1 + 1, len(planar_faces)):
+            j, f2, n2 = planar_faces[idx2]
+            pair_key = (min(i, j), max(i, j))
+            if pair_key in checked:
+                continue
+            checked.add(pair_key)
+
+            # Check if normals are anti-parallel (dot ≈ -1)
+            dot = n1.x * n2.x + n1.y * n2.y + n1.z * n2.z
+            if abs(dot + 1.0) < 0.05:
+                # Measure distance: project point from face1 onto face2's plane
+                p1 = f1.pointOnFace
+                p2 = f2.pointOnFace
+                dx = p1.x - p2.x
+                dy = p1.y - p2.y
+                dz = p1.z - p2.z
+                distance_cm = abs(n2.x * dx + n2.y * dy + n2.z * dz)
+                thickness_mm = distance_cm * 10  # cm to mm
+
+                walls.append({
+                    "face_index_1": i,
+                    "face_index_2": j,
+                    "thickness_mm": round(thickness_mm, 2),
+                    "centroid": [
+                        round((p1.x + p2.x) / 2, 4),
+                        round((p1.y + p2.y) / 2, 4),
+                        round((p1.z + p2.z) / 2, 4)
+                    ]
+                })
+
+    return {"walls": walls}
+
+
+def _analyze_holes(design):
+    """Find cylindrical faces and measure hole diameter/depth."""
+    rootComp = design.rootComponent
+    bodies = rootComp.bRepBodies
+    if bodies.count == 0:
+        return {"holes": []}
+
+    body = bodies.item(bodies.count - 1)
+    holes = []
+
+    for i in range(body.faces.count):
+        face = body.faces.item(i)
+        if isinstance(face.geometry, adsk.core.Cylinder):
+            radius_cm = face.geometry.radius
+            diameter_mm = radius_cm * 20  # cm to mm, ×2 for diameter
+            axis = face.geometry.axis
+
+            # Find depth via circular edges
+            edge_projections = []
+            for j in range(face.edges.count):
+                edge = face.edges.item(j)
+                try:
+                    geom = edge.geometry
+                    if isinstance(geom, (adsk.core.Circle3D, adsk.core.Arc3D)):
+                        center = geom.center
+                        proj = center.x * axis.x + center.y * axis.y + center.z * axis.z
+                        edge_projections.append(proj)
+                except:
+                    pass
+
+            depth_mm = 0
+            if len(edge_projections) >= 2:
+                depth_cm = max(edge_projections) - min(edge_projections)
+                depth_mm = depth_cm * 10
+
+            ratio = depth_mm / diameter_mm if diameter_mm > 0 else 0
+
+            centroid = face.pointOnFace
+            holes.append({
+                "face_index": i,
+                "diameter_mm": round(diameter_mm, 2),
+                "depth_mm": round(depth_mm, 2),
+                "depth_to_diameter_ratio": round(ratio, 2),
+                "centroid": [round(centroid.x, 4), round(centroid.y, 4), round(centroid.z, 4)]
+            })
+
+    return {"holes": holes}
+
+
+##############################################################################################
+### DFM Fix Functions ###
+
+def _fillet_specific_edges(design, ui, edge_indices, radius):
+    """Add fillet to specific edges by index."""
+    try:
+        rootComp = design.rootComponent
+        bodies = rootComp.bRepBodies
+        if bodies.count == 0:
+            return
+        body = bodies.item(bodies.count - 1)
+        edgeCollection = adsk.core.ObjectCollection.create()
+        for idx in edge_indices:
+            if idx < body.edges.count:
+                edgeCollection.add(body.edges.item(idx))
+
+        if edgeCollection.count == 0:
+            return
+
+        fillets = rootComp.features.filletFeatures
+        radiusInput = adsk.core.ValueInput.createByReal(radius)
+        filletInput = fillets.createInput()
+        filletInput.isRollingBallCorner = True
+        filletInput.edgeSetInputs.addConstantRadiusEdgeSet(edgeCollection, radiusInput, True)
+        fillets.add(filletInput)
+    except:
+        if ui:
+            ui.messageBox('Failed fillet_specific_edges:\n{}'.format(traceback.format_exc()))
+
+
 # HTTP Server######
 class Handler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass  # Suppress request logging to keep console clean
+
+    def _send_json(self, data, status=200):
+        """Helper to send a JSON response."""
+        self.send_response(status)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(json.dumps(data).encode('utf-8'))
+
+    def _query_fusion(self, task_name):
+        """Send a query task to Fusion and wait for the result."""
+        global query_results, query_events
+        query_id = str(uuid.uuid4())
+        event = threading.Event()
+        query_events[query_id] = event
+        task_queue.put((task_name, query_id))
+        if event.wait(timeout=15):
+            data = query_results.pop(query_id, {"error": "No result"})
+            query_events.pop(query_id, None)
+            return data
+        else:
+            query_events.pop(query_id, None)
+            query_results.pop(query_id, None)
+            return {"error": "Query timed out"}
+
+    def do_OPTIONS(self):
+        """Handle CORS preflight requests."""
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
     def do_GET(self):
         global ModelParameterSnapshot
         try:
             if self.path == '/count_parameters':
-                self.send_response(200)
-                self.send_header('Content-type','application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"user_parameter_count": len(ModelParameterSnapshot)}).encode('utf-8'))
+                self._send_json({"user_parameter_count": len(ModelParameterSnapshot)})
             elif self.path == '/list_parameters':
-                self.send_response(200)
-                self.send_header('Content-type','application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"ModelParameter": ModelParameterSnapshot}).encode('utf-8'))
-           
+                self._send_json({"ModelParameter": ModelParameterSnapshot})
+
+            # DFM Geometry Query endpoints
+            elif self.path == '/get_body_properties':
+                self._send_json(self._query_fusion('get_body_properties'))
+            elif self.path == '/get_faces_info':
+                self._send_json(self._query_fusion('get_faces_info'))
+            elif self.path == '/get_edges_info':
+                self._send_json(self._query_fusion('get_edges_info'))
+            elif self.path == '/analyze_walls':
+                self._send_json(self._query_fusion('analyze_walls'))
+            elif self.path == '/analyze_holes':
+                self._send_json(self._query_fusion('analyze_holes'))
+
             else:
                 self.send_error(404,'Not Found')
         except Exception as e:
@@ -1674,11 +2063,15 @@ class Handler(BaseHTTPRequestHandler):
                 y = float(data.get('y',0))
                 z = float(data.get('z',0))
                 task_queue.put(('move_body', x, y, z))
-                self.send_response(200)
-                self.send_header('Content-type','application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"message": "Body wird verschoben"}).encode('utf-8'))
-            
+                self._send_json({"message": "Body wird verschoben"})
+
+            # DFM Fix endpoints
+            elif path == '/fillet_specific_edges':
+                edge_indices = data.get('edge_indices', [])
+                radius = float(data.get('radius', 0.15))  # default 1.5mm = 0.15cm
+                task_queue.put(('fillet_specific_edges', edge_indices, radius))
+                self._send_json({"message": "Fillet wird auf ausgewählte Kanten angewendet"})
+
             else:
                 self.send_error(404,'Not Found')
 

@@ -40,7 +40,16 @@ ENDPOINTS = {
     "rectangular_pattern": f"{BASE_URL}/rectangular_pattern",
     "draw_text": f"{BASE_URL}/draw_text",
     "move_body": f"{BASE_URL}/move_body",
-    
+
+    # DFM Geometry Query endpoints
+    "get_body_properties": f"{BASE_URL}/get_body_properties",
+    "get_faces_info": f"{BASE_URL}/get_faces_info",
+    "get_edges_info": f"{BASE_URL}/get_edges_info",
+    "analyze_walls": f"{BASE_URL}/analyze_walls",
+    "analyze_holes": f"{BASE_URL}/analyze_holes",
+
+    # DFM Fix endpoints
+    "fillet_specific_edges": f"{BASE_URL}/fillet_specific_edges",
 }
 
 # Request Headers

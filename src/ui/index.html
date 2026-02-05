@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadly - DFM Analysis</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-title">
+                <h1>CADLY</h1>
+                <span class="subtitle">DFM Analysis Agent</span>
+            </div>
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">Checking...</span>
+            </div>
+        </header>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="btn btn-primary" id="analyzeBtn" onclick="runAnalysis()">
+                <span class="btn-icon">&#9654;</span> Analyze Part
+            </button>
+            <select id="processFilter" onchange="runAnalysis()">
+                <option value="all">All Processes</option>
+                <option value="fdm">FDM Only</option>
+                <option value="sla">SLA Only</option>
+                <option value="cnc">CNC Only</option>
+            </select>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <span>Analyzing geometry...</span>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary" id="summary" style="display: none;">
+            <div class="summary-card" id="summaryCard">
+                <div class="summary-header">
+                    <span class="part-name" id="partName">-</span>
+                    <span class="badge" id="processRecommendation">-</span>
+                </div>
+                <div class="summary-stats">
+                    <div class="stat">
+                        <span class="stat-value" id="totalViolations">0</span>
+                        <span class="stat-label">Issues</span>
+                    </div>
+                    <div class="stat stat-critical">
+                        <span class="stat-value" id="criticalCount">0</span>
+                        <span class="stat-label">Critical</span>
+                    </div>
+                    <div class="stat stat-warning">
+                        <span class="stat-value" id="warningCount">0</span>
+                        <span class="stat-label">Warning</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Violations List -->
+        <div class="section" id="violationsSection" style="display: none;">
+            <h2 class="section-title">Violations</h2>
+            <div class="violations-list" id="violationsList"></div>
+        </div>
+
+        <!-- Cost Comparison -->
+        <div class="section" id="costSection" style="display: none;">
+            <h2 class="section-title">Cost Estimate</h2>
+            <div class="cost-table" id="costTable"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState">
+            <div class="empty-icon">&#9881;</div>
+            <p>Open a part in Fusion 360 and click <strong>Analyze Part</strong> to check for manufacturing issues.</p>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
