@@ -68,6 +68,55 @@ function clearFile() {
 // Make clearFile global for onclick handler
 window.clearFile = clearFile;
 
+// ==================== Model Strategy Selection ====================
+
+const strategySelect = document.getElementById('strategySelect');
+const customModels = document.getElementById('customModels');
+const extractionModelSelect = document.getElementById('extractionModelSelect');
+const reasoningModelSelect = document.getElementById('reasoningModelSelect');
+const extractionCost = document.getElementById('extractionCost');
+const reasoningCost = document.getElementById('reasoningCost');
+const totalCost = document.getElementById('totalCost');
+
+// Cost per 1M tokens (approximate)
+const MODEL_COSTS = {
+    'google/gemini-2.0-flash-exp': 0.10,
+    'anthropic/claude-sonnet-4-5-20250929': 3.00
+};
+
+// Estimated token usage per phase
+const EXTRACTION_TOKENS = 2000;
+const REASONING_TOKENS = 5000;
+
+// Show/hide custom models section
+strategySelect.addEventListener('change', () => {
+    if (strategySelect.value === 'custom') {
+        customModels.classList.remove('hidden');
+    } else {
+        customModels.classList.add('hidden');
+    }
+});
+
+// Update cost estimates when models change
+extractionModelSelect.addEventListener('change', updateCostEstimates);
+reasoningModelSelect.addEventListener('change', updateCostEstimates);
+
+function updateCostEstimates() {
+    const extractionModel = extractionModelSelect.value;
+    const reasoningModel = reasoningModelSelect.value;
+
+    const extractionCostVal = (EXTRACTION_TOKENS / 1_000_000) * MODEL_COSTS[extractionModel];
+    const reasoningCostVal = (REASONING_TOKENS / 1_000_000) * MODEL_COSTS[reasoningModel];
+    const totalCostVal = extractionCostVal + reasoningCostVal;
+
+    extractionCost.textContent = `~$${extractionCostVal.toFixed(4)}`;
+    reasoningCost.textContent = `~$${reasoningCostVal.toFixed(4)}`;
+    totalCost.textContent = `$${totalCostVal.toFixed(4)}`;
+}
+
+// Initialize cost estimates
+updateCostEstimates();
+
 // ==================== Agent Analysis ====================
 
 const analyzeAgentBtn = document.getElementById('analyzeAgentBtn');
@@ -81,6 +130,7 @@ async function runAgentAnalysis() {
     const useFusion = document.getElementById('useFusion').checked;
     const machineText = document.getElementById('machineText').value;
     const process = document.getElementById('processSelect').value;
+    const strategy = strategySelect.value;
 
     // Validation
     if (!uploadedFile && !useFusion) {
@@ -106,6 +156,13 @@ async function runAgentAnalysis() {
     formData.append('process', process);
     formData.append('quantity', '1');
     formData.append('use_fusion', useFusion ? 'true' : 'false');
+    formData.append('strategy', strategy);
+
+    // Add custom model selections if custom strategy
+    if (strategy === 'custom') {
+        formData.append('extraction_model', extractionModelSelect.value);
+        formData.append('reasoning_model', reasoningModelSelect.value);
+    }
 
     try {
         // Make POST request
@@ -172,6 +229,9 @@ function processSSEMessage(message) {
             case 'phase':
                 addPhaseIndicator(data);
                 break;
+            case 'model_handoff':
+                addModelHandoff(data);
+                break;
             case 'finding':
                 addFinding(data);
                 break;
@@ -221,6 +281,29 @@ function addPhaseIndicator(event) {
     }
 }
 
+function addModelHandoff(event) {
+    const handoffEl = document.createElement('div');
+    handoffEl.className = 'phase-item model-handoff';
+    handoffEl.dataset.phase = event.phase;
+
+    const icon = '🔄';
+    handoffEl.innerHTML = `
+        <span class="phase-icon">${icon}</span>
+        <span class="phase-name">${event.message}</span>
+        <span class="phase-progress">${(event.progress * 100).toFixed(0)}%</span>
+    `;
+
+    phaseList.appendChild(handoffEl);
+
+    // Add visual highlight animation
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            handoffEl.classList.add('highlight');
+            setTimeout(() => handoffEl.classList.remove('highlight'), 1000);
+        });
+    });
+}
+
 function addFinding(event) {
     if (!event.data) return;
 
@@ -257,17 +340,37 @@ function displayFinalReport(report) {
         agentProgress.classList.add('hidden');
     }, 2000);
 
-    // Show success message
+    // Extract data
     const findingsCount = report.findings?.length || 0;
     const isManufacturable = report.is_manufacturable ? 'Yes' : 'No';
+    const recommendedProcess = report.recommended_process?.toUpperCase() || 'Unknown';
 
-    alert(`Analysis complete!
+    // Build message
+    let message = `Analysis complete!
 
 Findings: ${findingsCount}
 Manufacturable: ${isManufacturable}
-Recommended Process: ${report.recommended_process?.toUpperCase() || 'Unknown'}
+Recommended Process: ${recommendedProcess}`;
 
-See full report in console.`);
+    // Add cost savings if available
+    if (report.cost_analysis) {
+        const costAnalysis = report.cost_analysis;
+        message += `
+
+Strategy: ${costAnalysis.strategy.toUpperCase()}
+Total Cost: $${costAnalysis.total_cost.toFixed(4)}`;
+
+        if (costAnalysis.savings > 0) {
+            message += `
+Savings vs All-Sonnet: $${costAnalysis.savings.toFixed(4)} (${costAnalysis.savings_percent.toFixed(1)}%)`;
+        }
+    }
+
+    message += `
+
+See full report in console.`;
+
+    alert(message);
 
     // Could also populate existing tabs with report data here
     // For now, log to console for debugging
