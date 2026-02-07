@@ -363,31 +363,54 @@ function displayFinalReport(report) {
     summary.style.display = 'block';
 
     // === POPULATE VIOLATIONS LIST ===
-    const violationsSection = document.getElementById('violationsSection');
-    const violationsList = document.getElementById('violationsList');
+    // Convert findings to violation format and use existing renderer
+    const violations = report.findings.map(finding => ({
+        rule_id: finding.rule_id,
+        severity: finding.severity,
+        message: finding.message,
+        current_value: finding.current_value,
+        required_value: finding.required_value,
+        fixable: finding.fixable,
+        feature_id: finding.feature_id || 'unknown',
+        process: finding.process,
+        location: null  // Agent doesn't provide location data
+    }));
 
-    if (findingsCount > 0) {
-        violationsList.innerHTML = '';
-        report.findings.forEach(finding => {
-            const card = document.createElement('div');
-            card.className = `violation-card severity-${finding.severity}`;
-            card.innerHTML = `
-                <div class="violation-header">
-                    <span class="rule-id">${finding.rule_id}</span>
-                    <span class="severity-badge ${finding.severity}">${finding.severity.toUpperCase()}</span>
-                </div>
-                <p class="violation-message">${finding.message}</p>
-                <div class="violation-details">
-                    <span>Current: ${finding.current_value}</span>
-                    <span>Required: ${finding.required_value}</span>
-                    <span>Process: ${finding.process.toUpperCase()}</span>
-                </div>
-            `;
-            violationsList.appendChild(card);
-        });
-        violationsSection.style.display = 'block';
+    // Use the existing renderViolations function from violations.js
+    if (typeof renderViolations === 'function') {
+        renderViolations(violations);
     } else {
-        violationsSection.style.display = 'none';
+        // Fallback if renderViolations not loaded
+        const violationsSection = document.getElementById('violationsSection');
+        const violationsList = document.getElementById('violationsList');
+
+        if (findingsCount > 0) {
+            violationsList.innerHTML = '';
+            violations.forEach(v => {
+                const card = document.createElement('div');
+                card.className = `violation-card ${v.severity}`;
+                card.innerHTML = `
+                    <div class="violation-header">
+                        <span class="violation-id">${v.rule_id}</span>
+                        <span class="severity-badge severity-${v.severity}">${v.severity}</span>
+                    </div>
+                    <p class="violation-message">${v.message}</p>
+                    <div class="violation-values">
+                        <span>Current: <strong>${v.current_value.toFixed(2)}mm</strong></span>
+                        <span>Required: <strong>${v.required_value.toFixed(2)}mm</strong></span>
+                    </div>
+                    ${v.fixable ? `
+                        <div class="fix-action">
+                            <button class="btn-fix" onclick="applyFix('${v.rule_id}', '${v.feature_id}', ${v.required_value}, ${v.current_value})">Auto-Fix</button>
+                        </div>
+                    ` : ''}
+                `;
+                violationsList.appendChild(card);
+            });
+            violationsSection.style.display = 'block';
+        } else {
+            violationsSection.style.display = 'none';
+        }
     }
 
     // === POPULATE COST TABLE ===

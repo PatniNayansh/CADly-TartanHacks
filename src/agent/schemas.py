@@ -28,6 +28,7 @@ class DFMFinding(BaseModel):
     required_value: float = Field(description="Required/recommended value")
     fixable: bool = Field(description="Whether auto-fix is available")
     process: str = Field(description="Manufacturing process this applies to")
+    feature_id: Optional[str] = Field(default=None, description="Feature ID for auto-fix (edge/face/hole ID)")
     fix_suggestion: Optional[str] = Field(default=None, description="Suggested fix action")
 
 
@@ -93,8 +94,27 @@ class DFMReport(BaseModel):
 class StreamEvent(BaseModel):
     """SSE event structure for real-time progress updates."""
 
-    type: str = Field(description="Event type: phase, finding, cost, recommendation, final")
+    type: str = Field(description="Event type: phase, finding, cost, recommendation, final, model_handoff")
     phase: Optional[str] = Field(default=None, description="Current analysis phase")
     message: str = Field(description="Human-readable status message")
     progress: float = Field(ge=0.0, le=1.0, description="Progress 0.0-1.0")
     data: Optional[dict] = Field(default=None, description="Event payload data")
+
+
+class ModelHandoff(BaseModel):
+    """Model handoff information for multi-model analysis."""
+
+    from_model: Optional[str] = Field(default=None, description="Previous model (None if first)")
+    to_model: str = Field(description="Current model being used")
+    phase: str = Field(description="Analysis phase name")
+    reason: str = Field(description="Why this model was chosen")
+    estimated_cost: float = Field(description="Estimated cost for this phase in USD")
+
+
+class AnalysisStrategy(BaseModel):
+    """Analysis strategy configuration."""
+
+    mode: str = Field(description="Strategy mode: auto, budget, quality, custom")
+    extraction_model: Optional[str] = Field(default=None, description="Model for extraction phase")
+    reasoning_model: Optional[str] = Field(default=None, description="Model for reasoning phase")
+    estimated_total_cost: float = Field(default=0.0, description="Total estimated cost in USD")

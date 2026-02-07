@@ -497,6 +497,9 @@ async def agent_analyze(
     process: str = Form("all"),
     quantity: int = Form(1),
     use_fusion: bool = Form(False),
+    strategy: str = Form("auto"),
+    extraction_model: str = Form(""),
+    reasoning_model: str = Form(""),
 ):
     """Run Dedalus-powered DFM analysis with SSE streaming.
 
@@ -544,6 +547,9 @@ async def agent_analyze(
                 use_fusion=use_fusion,
                 process=process,
                 quantity=quantity,
+                strategy=strategy,
+                extraction_model=extraction_model if extraction_model else None,
+                reasoning_model=reasoning_model if reasoning_model else None,
             ):
                 # Format as SSE
                 yield f"event: {event.type}\n"

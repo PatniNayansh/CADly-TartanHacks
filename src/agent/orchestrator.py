@@ -3,7 +3,7 @@
 from typing import AsyncGenerator, Optional
 import json
 import os
-from src.agent.schemas import DFMReport, StreamEvent, GeometryStats
+from src.agent.schemas import DFMReport, StreamEvent, GeometryStats, ModelHandoff
 from src.agent.tools import (
     parse_cad_file,
     get_fusion_geometry,
@@ -15,7 +15,14 @@ from src.agent.tools import (
     suggest_fixes,
     highlight_in_fusion,
 )
-from src.agent.router import compute_complexity, pick_model
+from src.agent.router import (
+    compute_complexity,
+    pick_model,
+    get_strategy_models,
+    estimate_total_cost,
+    estimate_phase_cost,
+    get_model_info
+)
 
 # Lazy import for Dedalus - graceful degradation if not installed
 try:
@@ -52,16 +59,20 @@ class DFMAgent:
         use_fusion: bool = False,
         process: str = "all",
         quantity: int = 1,
+        strategy: str = "auto",
+        extraction_model: Optional[str] = None,
+        reasoning_model: Optional[str] = None,
     ) -> AsyncGenerator[StreamEvent, None]:
-        """Run full DFM analysis via Dedalus agent with streaming.
+        """Run full DFM analysis via Dedalus agent with multi-model streaming.
 
         Workflow:
         1. Parse geometry (from file or Fusion)
-        2. Compute complexity → pick model
-        3. Run Dedalus agent with all tools
-        4. Agent calls tools as needed
-        5. Validate final output against DFMReport schema
-        6. Yield final report
+        2. Get strategy models (auto/budget/quality/custom)
+        3. **PHASE 1** (Extraction): Fast model for geometry + machine parsing
+        4. **MODEL HANDOFF** 🔄
+        5. **PHASE 2** (Reasoning): Powerful model for DFM synthesis
+        6. Validate final output against DFMReport schema
+        7. Yield final report with cost savings
 
         Args:
             cad_filepath: Path to uploaded STL/OBJ file (if file upload mode)
@@ -69,20 +80,22 @@ class DFMAgent:
             use_fusion: If True, query live Fusion 360 instead of file
             process: Manufacturing process filter
             quantity: Production quantity
+            strategy: Model strategy ("auto", "budget", "quality", "custom")
+            extraction_model: Custom model for extraction (only for "custom" strategy)
+            reasoning_model: Custom model for reasoning (only for "custom" strategy)
 
         Yields:
             StreamEvent objects for SSE streaming to browser
         """
-        # Phase 1: Geometry extraction
+        # Step 0: Get geometry data first
         yield StreamEvent(
             type="phase",
             phase="geometry_extraction",
             message="Extracting geometry data...",
-            progress=0.1,
+            progress=0.05,
             data=None
         )
 
-        # Get geometry data
         if cad_filepath:
             geometry = parse_cad_file(cad_filepath)
             part_name = os.path.basename(cad_filepath).split('.')[0]
@@ -92,26 +105,111 @@ class DFMAgent:
         else:
             raise ValueError("Must provide either cad_filepath or use_fusion=True")
 
-        # Phase 2: Complexity routing
-        complexity = compute_complexity(
-            triangle_count=geometry.get("triangle_count"),
-            body_count=geometry.get("body_count", 1),
-            issue_count=0,  # Don't know yet
-            machine_description_length=len(machine_text) if machine_text else 0,
-        )
+        # Step 1: Determine model strategy
+        models = get_strategy_models(strategy, extraction_model, reasoning_model)
+        extraction_model_id = models["extraction_model"]
+        reasoning_model_id = models["reasoning_model"]
 
-        model = pick_model(complexity)
+        # Estimate costs
+        cost_breakdown = estimate_total_cost(extraction_model_id, reasoning_model_id)
 
         yield StreamEvent(
             type="phase",
-            phase="model_selection",
-            message=f"Routed to {model} (complexity: {complexity:.1f}/100)",
-            progress=0.2,
-            data={"model": model, "complexity": complexity}
+            phase="strategy_selection",
+            message=f"Strategy: {strategy.upper()} | Est. cost: ${cost_breakdown['total_cost']:.4f}",
+            progress=0.1,
+            data={
+                "strategy": strategy,
+                "models": models,
+                "cost_breakdown": cost_breakdown
+            }
         )
 
-        # Phase 3: Build analysis prompt
-        prompt = self._build_analysis_prompt(
+        # === PHASE 1: EXTRACTION (Fast Model) ===
+        yield StreamEvent(
+            type="model_handoff",
+            phase="extraction_start",
+            message=f"🚀 PHASE 1: Starting extraction with {get_model_info(extraction_model_id)['name']}",
+            progress=0.15,
+            data=ModelHandoff(
+                from_model=None,
+                to_model=extraction_model_id,
+                phase="extraction",
+                reason=f"Fast extraction of geometry and machine data ({models['reason']})",
+                estimated_cost=cost_breakdown['extraction_cost']
+            ).model_dump()
+        )
+
+        # Build extraction prompt
+        extraction_prompt = f"""You are a data extraction expert. Extract and structure this information:
+
+PART GEOMETRY:
+{json.dumps(geometry, indent=2)}
+
+MACHINE TEXT:
+{machine_text or "No machines specified"}
+
+YOUR TASKS:
+1. If machine text is provided, call parse_machine_capabilities() to extract structured machine data
+2. Return a JSON summary of the geometry and available machines
+
+Return ONLY valid JSON matching this format:
+{{
+  "geometry_summary": "Brief description of the part",
+  "machines_available": ["list of machine names"] or [],
+  "ready_for_analysis": true
+}}"""
+
+        # Create extraction runner
+        extraction_runner = DedalusRunner(self.client)
+
+        # Run extraction phase
+        extraction_tools = []
+        if machine_text:
+            extraction_tools.append(parse_machine_capabilities)
+
+        extraction_response = await extraction_runner.run(
+            input=extraction_prompt,
+            model=extraction_model_id,
+            tools=extraction_tools,
+            stream=False,
+        )
+
+        yield StreamEvent(
+            type="phase",
+            phase="extraction_complete",
+            message="✅ Extraction complete",
+            progress=0.35,
+            data={"extraction_output": extraction_response.final_output[:200]}
+        )
+
+        # === MODEL HANDOFF ===
+        if extraction_model_id != reasoning_model_id:
+            yield StreamEvent(
+                type="model_handoff",
+                phase="handoff",
+                message=f"🔄 MODEL HANDOFF: {get_model_info(extraction_model_id)['name']} → {get_model_info(reasoning_model_id)['name']}",
+                progress=0.4,
+                data=ModelHandoff(
+                    from_model=extraction_model_id,
+                    to_model=reasoning_model_id,
+                    phase="reasoning",
+                    reason=f"Deep DFM analysis and synthesis ({models['reason']})",
+                    estimated_cost=cost_breakdown['reasoning_cost']
+                ).model_dump()
+            )
+
+        # === PHASE 2: REASONING (Powerful Model) ===
+        yield StreamEvent(
+            type="phase",
+            phase="dfm_analysis",
+            message=f"🧠 PHASE 2: Running DFM analysis with {get_model_info(reasoning_model_id)['name']}",
+            progress=0.45,
+            data=None
+        )
+
+        # Build reasoning prompt
+        reasoning_prompt = self._build_analysis_prompt(
             part_name=part_name,
             geometry=geometry,
             machine_text=machine_text,
@@ -119,21 +217,14 @@ class DFMAgent:
             quantity=quantity
         )
 
-        # Phase 4: Run Dedalus agent
-        yield StreamEvent(
-            type="phase",
-            phase="dfm_analysis",
-            message="Running DFM analysis with AI agent...",
-            progress=0.3,
-            data=None
-        )
+        # Append extraction results if available
+        reasoning_prompt += f"\n\nEXTRACTION PHASE RESULTS:\n{extraction_response.final_output}\n"
 
-        # Create Dedalus runner
-        runner = DedalusRunner(self.client)
+        # Create reasoning runner
+        reasoning_runner = DedalusRunner(self.client)
 
-        # Tool list - Dedalus will call these as needed
-        tools = [
-            parse_cad_file,
+        # Reasoning tools
+        reasoning_tools = [
             check_dfm_rules,
             estimate_manufacturing_cost,
             recommend_machines,
@@ -141,16 +232,11 @@ class DFMAgent:
             suggest_fixes,
         ]
 
-        # Add async tools if needed
-        if machine_text:
-            tools.append(parse_machine_capabilities)
-
-        # Run agent (non-streaming for simplicity)
-        # TODO: Implement streaming mode to get real-time tool calls
-        response = await runner.run(
-            input=prompt,
-            model=model,
-            tools=tools,
+        # Run reasoning phase
+        response = await reasoning_runner.run(
+            input=reasoning_prompt,
+            model=reasoning_model_id,
+            tools=reasoning_tools,
             stream=False,
         )
 
@@ -202,13 +288,34 @@ class DFMAgent:
                 geometry
             )
 
-        # Phase 6: Final report
+        # Phase 6: Calculate cost savings
+        all_sonnet_cost = estimate_total_cost(
+            "anthropic/claude-sonnet-4-5-20250929",
+            "anthropic/claude-sonnet-4-5-20250929"
+        )["total_cost"]
+
+        savings = all_sonnet_cost - cost_breakdown["total_cost"]
+        savings_percent = (savings / all_sonnet_cost * 100) if all_sonnet_cost > 0 else 0
+
+        # Phase 7: Final report
+        final_data = report.model_dump()
+        final_data["cost_analysis"] = {
+            "strategy": strategy,
+            "extraction_model": extraction_model_id,
+            "reasoning_model": reasoning_model_id,
+            "total_cost": cost_breakdown["total_cost"],
+            "all_sonnet_cost": all_sonnet_cost,
+            "savings": savings,
+            "savings_percent": savings_percent,
+            "breakdown": cost_breakdown["breakdown"]
+        }
+
         yield StreamEvent(
             type="final",
             phase="complete",
-            message="Analysis complete",
+            message=f"✅ Analysis complete! Saved ${savings:.4f} ({savings_percent:.1f}%) vs all-Sonnet",
             progress=1.0,
-            data=report.model_dump()
+            data=final_data
         )
 
     def _build_analysis_prompt(
@@ -288,6 +395,7 @@ Return a valid JSON object matching this exact schema:
       "required_value": number,
       "fixable": boolean,
       "process": "string",
+      "feature_id": "string or null - edge/face/hole ID for auto-fix",
       "fix_suggestion": "string or null"
     }
   ],
