@@ -1,8 +1,8 @@
 # Cadly v2 — Build Progress
 
-## Last Updated: 2026-02-06 (Session 4)
+## Last Updated: 2026-02-07 (Session 5)
 ## Current Phase: Hackathon polish — targeting 7 TartanHacks prize tracks
-## Last Commit: 2a78d59 — feat: add process switch simulator
+## Last Commit: fe5322f — docs: add pitch-ready README
 
 ## Completed:
 - [x] Phase 1: Core Infrastructure — DONE
@@ -11,16 +11,17 @@
 - [x] Phase 4: API + UI — DONE
 - [x] Phase 5: Auto-Correct (R1) — DONE (all 3 fixes verified: hole, corner, wall)
 - [x] Phase 6: Process Switch Simulator (R2) — DONE (redesign planner, comparison, API, UI)
+- [x] Phase 7: Machine + Material Recommendation (S1, S2) — DONE (16 machines, 23 materials, matcher, API, UI)
 - [x] Phase 12: Sustainability Module — DONE (waste, carbon, green score + Dedalus AI scoring)
 - [x] Phase 12 Polish: Equivalencies, breakdown cards, Dedalus error handling — DONE
 - [x] Phase 13: Decision Summary Panel — DONE
 - [x] Phase 14: AI Design Review Board (R3) — DONE (4 specialists + synthesis via Dedalus)
 - [x] Phase 15: Demo Polish — DONE (loading animations, transitions, branding, footer)
-- [ ] Phase 7: Machine + Material Recommendation (S1, S2) — NOT STARTED
+- [x] README.md — DONE (pitch-ready for judges)
 - [ ] Phase 8: Cost Dashboard (S3) — PARTIAL (quantity slider exists, needs polish)
-- [ ] Phase 10: Report Generator (S4) — NOT STARTED
+- [ ] Phase 10: Report Generator (S4) — NOT STARTED (optional)
 
-## Testing Status (Phases 1-5):
+## Testing Status:
 - [x] Server starts on port 3000, health check returns fusion_connected: true
 - [x] UI loads in browser at localhost:3000
 - [x] Test part created via execute_script (shelled box + 2mm hole)
@@ -32,10 +33,13 @@
 - [x] Wall fix — shell support added, TESTED: "Increased wall from 1.0mm to 2.0mm (via shellThickness)"
 - [x] Hole depth detection — FIXED: bounding box projection method, returns correct depth (20mm on solid box)
 - [x] CNC-003 — now fires correctly: "Hole depth ratio 10.0 exceeds 4.0 maximum"
+- [x] Machine recommendation API — TESTED: FDM 5 machines, SLA 3, CNC 5, IM 3 (all return ranked results)
+- [x] Material recommendation API — TESTED: FDM 8 materials, CNC 8 (all return ranked with spider charts)
+- [x] Simulator API — TESTED: CNC→FDM returns 13 removed, 6 new violations, $90.79 savings
 - [ ] Cost tab (quantity slider) — NOT TESTED YET
-- [ ] Simulator tab — NOT TESTED with Fusion yet
 - [ ] Sustainability tab — NOT TESTED with Fusion yet
 - [ ] AI Review tab — NOT TESTED with Fusion yet
+- [ ] Recommend tab UI — API tested, UI not visually verified yet
 
 ## UX Issues Found:
 - User doesn't know WHAT geometry they're fixing when clicking Auto-Fix buttons
@@ -67,6 +71,7 @@
 - .gitignore
 - CLAUDE.md
 - FUSION_SCRIPTING_LESSONS.md
+- README.md
 
 ### src/
 - src/__init__.py
@@ -110,7 +115,7 @@
 ### src/api/
 - src/api/__init__.py
 - src/api/middleware.py (CORS, request logging, error_response/success_response helpers)
-- src/api/routes.py (health, analyze, cost, cost/compare, fix, fix-all, sustainability, simulate, review + placeholders)
+- src/api/routes.py (13 endpoints: health, analyze, cost, cost/compare, fix, fix-all, sustainability, simulate, review, machines, materials, report)
 - src/api/websocket.py (ConnectionManager: connect, disconnect, broadcast, send_status)
 
 ### src/fixes/
@@ -126,6 +131,13 @@
 - src/simulator/process_switch.py (ProcessSwitcher: fetch geometry once, analyze both processes, diff violations, cost delta)
 - src/simulator/redesign_planner.py (RedesignPlanner: prioritized step-by-step roadmap from violations, templates for all 13 rules)
 - src/simulator/comparison.py (build_comparison: side-by-side process info, strengths/weaknesses, verdict)
+
+### src/recommend/
+- src/recommend/__init__.py
+- src/recommend/machine_db.py (MachineDB: loads machines.json, filter by process/build volume)
+- src/recommend/machine_matcher.py (MachineMatcher: score by speed/precision/cost, build volume fit check)
+- src/recommend/material_db.py (MaterialDB: loads materials.json, filter by process/category)
+- src/recommend/material_matcher.py (MaterialMatcher: score by spider chart properties, highlights)
 
 ### src/sustainability/
 - src/sustainability/__init__.py
@@ -148,28 +160,28 @@
 
 ### src/ui/
 - src/ui/index.html (6 tabs: Analysis, Costs, Simulator, Recommend, AI Review, Sustainability)
-- src/ui/styles.css (dark theme, all component styles, ~1240 lines)
+- src/ui/styles.css (dark theme, all component styles, ~1590 lines)
 - src/ui/app.js (tab switching, WS, analysis + cost dashboard + decision summary wiring)
 - src/ui/components/violations.js (renderSummary, renderViolations, renderCost, applyFix, fixAll)
 - src/ui/components/sustainability.js (green score hero, waste bars, carbon bars, process breakdowns, savings tips, AI section)
 - src/ui/components/decision_summary.js (renderDecisionSummary: consolidated TL;DR panel)
 - src/ui/components/review.js (runAIReview, renderAIReview: synthesis + agent cards)
 - src/ui/components/simulator.js (runSimulation, renderSimResults: verdict, violation diff, cost impact, process comparison, roadmap)
+- src/ui/components/recommend.js (loadRecommendations, renderMachines, renderMaterials: ranked cards with rating bars + spider charts)
 - src/ui/utils/api.js (apiGet, apiPost, wsConnect, handleWsMessage, showToast)
 - src/ui/utils/charts.js (placeholder for Phase 8)
 
 ### data/
 - data/rules.json (13 DFM rules: FDM-001~004, SLA-001, CNC-001~005, GEN-001, IM-001~002)
 - data/standard_holes.json (35 metric + 41 imperial drill sizes)
+- data/machines.json (16 machines: 5 FDM, 3 SLA, 5 CNC, 3 IM)
+- data/materials.json (23 materials: 8 FDM, 5 SLA, 8 CNC, 4 IM — some shared across processes)
 
 ### scripts/
 - scripts/test_mcp.py
 
-## Files Remaining (Phases 7-10):
-- src/recommend/ (machine_db.py, machine_matcher.py, material_db.py, material_matcher.py)
-- data/machines.json, data/materials.json
-- src/ui/components/recommend.js
-- src/reports/ (generator.py, templates/dfm_report.html)
+## Files Remaining:
+- src/reports/ (generator.py, templates/dfm_report.html) — optional Phase 10
 - tests/
 
 ## Known Issues:
@@ -198,3 +210,6 @@
 - Wall fix on shells: 1mm->2mm via shellThickness parameter
 - WebSocket: connected after installing websockets package
 - Cost estimates: FDM $0.37, SLA $0.82, CNC $91.16, IM $11000.28 for test part
+- Machine recommendation: FDM 5 machines (Bambu X1C #1), SLA 3, CNC 5, IM 3
+- Material recommendation: FDM 8 materials, CNC 8 (with spider chart scores)
+- Simulator: CNC→FDM returns 13 removed, 6 new violations, $90.79 savings

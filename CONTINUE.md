@@ -6,50 +6,44 @@ Read CLAUDE.md and PROGRESS.md first. Then continue the task list below.
 ## PROJECT STATE
 - Working directory: C:\Users\patni\Documents\Projects\cadly-v2
 - Git branch: main
-- Last commit: 2a78d59 — feat: add process switch simulator
+- Last commit: fe5322f — docs: add pitch-ready README
 - Current phase: Hackathon polish — targeting 7 TartanHacks prize tracks
 - Fusion add-in location: C:\Users\patni\AppData\Roaming\Autodesk\Autodesk Fusion 360\API\AddIns\MCP\MCP.py
 - Python venv: .venv/ (all deps installed including websockets)
+- GitHub: https://github.com/PatniNayansh/CADly-TartanHacks (pushed and up to date)
 
-## WHAT WAS COMPLETED (Sessions 3-4, 2026-02-06)
-1. Sustainability polish: carbon equivalencies in savings tips, waste material labels + weight equivalencies, process score breakdown cards with sub-score bars, graceful Dedalus unavailable handling (lazy import + API key check + UI fallback)
-2. Decision Summary Panel: consolidated "TL;DR" at top of Analysis tab showing recommended process, cost, green score, violation count
-3. AI Design Review Board (R3): 4 specialist agents (CNC Expert, FDM Expert, Materials Engineer, Cost Optimizer) + synthesis via Dedalus. POST /api/review endpoint, background WebSocket push, collapsible agent cards UI, Powered by Dedalus badge
-4. Demo Polish: tab fade transitions, analyze button spinner, fix button animation (Fixing -> Fixed! + card fade), violation slide-in, updated branding, about footer
-5. Process Switch Simulator (R2): redesign_planner.py (step-by-step roadmap, templates for all 13 rules), comparison.py (side-by-side with verdict), /api/simulate endpoint, simulator.js UI (verdict banner, violation diff, cost impact, process comparison grid, redesign roadmap)
+## WHAT WAS COMPLETED (Session 5, 2026-02-07)
+1. Phase 7 — Machine + Material Recommendation:
+   - data/machines.json (16 real machines: 5 FDM, 3 SLA, 5 CNC, 3 IM)
+   - data/materials.json (23 materials with full properties)
+   - src/recommend/ module (machine_db, machine_matcher, material_db, material_matcher)
+   - Replaced /api/machines and /api/materials 501 placeholders with real endpoints
+   - src/ui/components/recommend.js (ranked cards, rating bars, spider chart bars)
+   - Wired Recommend tab in index.html + styles in styles.css
+2. README.md — pitch-ready for TartanHacks judges (architecture, prize tracks, how to run)
+3. All 4 commits pushed to GitHub
 
-## GIT LOG (6 commits across sessions 3-4)
-- f4c59c7 feat: polish sustainability tab for hackathon judges
-- 65ce080 feat: add unified decision summary panel
-- 0cf0611 feat: add AI design review board with 4 specialist agents
-- 5fa2287 feat: wire AI design review API and render agent panels
-- d067212 feat: UI polish and demo readiness
-- 2a78d59 feat: add process switch simulator
+## GIT LOG (4 commits in session 5)
+- 474c659 feat: add machine and material databases
+- 31d8afa feat: add machine and material recommendation engine
+- c4d0189 feat: wire machine and material recommendation UI
+- fe5322f docs: add pitch-ready README
 
 ## WHAT TO DO NEXT (in order)
 
-### Priority 1: Phase 7 — Machine + Material Recommendation
-- Create `data/machines.json` (15-20 real machines with specs: build volume, tolerance, materials, price)
-- Create `data/materials.json` (20-30 materials with properties: strength, heat resistance, cost, density)
-- Create `src/recommend/__init__.py`
-- Create `src/recommend/machine_db.py` — load machines.json, filter by build volume + process
-- Create `src/recommend/machine_matcher.py` — match part to machines, rank by fit
-- Create `src/recommend/material_db.py` — load materials.json, filter by process
-- Create `src/recommend/material_matcher.py` — match part needs to materials, spider chart data
-- Implement `/api/machines` GET endpoint (currently returns 501)
-- Implement `/api/materials` GET endpoint (currently returns 501)
-- Create `src/ui/components/recommend.js` — machine + material recommendation UI
-- Wire up Recommend tab in index.html (currently placeholder)
-
-### Priority 2: Test Everything End-to-End with Fusion 360
+### Priority 1: End-to-End Testing with Fusion 360
 - Start server, create test part, run full analysis
 - Test each tab: Analysis, Costs, Simulator, Recommend, AI Review, Sustainability
 - Fix any runtime bugs
 - Test auto-fix workflow
 
-### Priority 3: Pitch Prep
-- Update README.md to be pitch-ready
-- Create PITCH_NOTES.md with talking points per track
+### Priority 2: Optional Features (if time permits)
+- Phase 10: Report Generator (PDF export)
+- Phase 8: Cost Dashboard polish (quantity slider UX)
+
+### Priority 3: Final Polish
+- Visual check of all 6 tabs in browser
+- Demo rehearsal
 
 ## TEST PART CREATION SCRIPT
 The test part gets lost when Fusion restarts. Recreate via three sequential curl calls to port 5000 (use `"code"` param, not `"script"`):
@@ -79,7 +73,6 @@ curl -X POST http://localhost:5000/execute_script -H "Content-Type: application/
 - Start server: `.venv\Scripts\python.exe -m uvicorn src.main:app --host 0.0.0.0 --port 3000 --app-dir .`
 - execute_script uses `"code"` param (not `"script"`)
 - Dedalus integration: dedalus_labs package used for AI Review + AI Sustainability. Lazy import handles missing package gracefully.
-- Models exist for machines (src/models/machines.py) and materials (src/models/materials.py) already — use them.
 
 ## TARTANHACKS PRIZE TRACKS
 1. Best Overall — full platform polish
@@ -96,10 +89,11 @@ curl -X POST http://localhost:5000/execute_script -H "Content-Type: application/
 - src/dfm/engine.py orchestrates analysis
 - src/fixes/ applies fixes (hole, corner, wall)
 - src/simulator/ process switch simulation (violation diff, cost delta, redesign roadmap)
+- src/recommend/ machine + material matching from JSON databases
 - src/sustainability/ calculates waste, carbon, green score + AI enrichment
 - src/agents/ runs 4-agent design review via Dedalus
 - src/api/routes.py: 13 endpoints (health, analyze, cost, cost/compare, fix, fix-all, sustainability, simulate, review, machines, materials, report)
 
 ## RESUME COMMAND
 After reading CLAUDE.md and PROGRESS.md, start with:
-Phase 7 — Machine + Material Recommendation (create data files, recommend module, API endpoints, UI)
+End-to-end testing with Fusion 360 — or optional Phase 10 (Report Generator) if time permits.
