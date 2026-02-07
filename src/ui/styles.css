@@ -957,3 +957,71 @@ select {
     color: var(--text-secondary);
 }
 .ai-unavailable-icon { font-size: 18px; }
+
+/* Decision Summary Panel */
+.decision-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    border-left: 4px solid var(--border);
+}
+.decision-card.good { border-left-color: var(--success); background: rgba(39, 174, 96, 0.06); }
+.decision-card.warning { border-left-color: var(--warning); background: rgba(243, 156, 18, 0.06); }
+.decision-card.critical { border-left-color: var(--critical); background: rgba(231, 76, 60, 0.06); }
+
+.decision-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.decision-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+}
+.decision-status-dot.good { background: var(--success); }
+.decision-status-dot.warning { background: var(--warning); }
+.decision-status-dot.critical { background: var(--critical); }
+.decision-status-text {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.decision-recommendation {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.decision-metrics {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.decision-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+}
+.decision-metric-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.decision-metric-value.green { color: var(--success); }
+.decision-metric-value.amber { color: var(--warning); }
+.decision-metric-value.red { color: var(--critical); }
+.decision-metric-label {
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-top: 2px;
+}

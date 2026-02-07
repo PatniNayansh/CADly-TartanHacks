@@ -95,6 +95,9 @@ async function runAnalysis() {
             lastSustainability = sustainability.data;
             renderSustainability(sustainability.data);
         }
+
+        // Decision summary pulls from all three data sources
+        renderDecisionSummary(lastAnalysis, lastCost, lastSustainability);
     } catch (err) {
         showToast(`Analysis failed: ${err.message}`, 'error');
         emptyState.style.display = 'block';
