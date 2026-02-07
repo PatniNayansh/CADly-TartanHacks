@@ -958,6 +958,146 @@ select {
 }
 .ai-unavailable-icon { font-size: 18px; }
 
+/* AI Design Review Board */
+.review-agents-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    justify-content: center;
+}
+.agent-chip {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.review-synthesis {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    border-left: 4px solid var(--accent);
+}
+.review-synthesis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.review-score {
+    font-size: 24px;
+    font-weight: 800;
+}
+.review-rec-process {
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: var(--accent);
+}
+.review-summary {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.review-findings { margin: 12px 0; }
+.review-finding {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+}
+.finding-severity {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    min-width: 55px;
+    text-align: center;
+}
+.review-finding.critical .finding-severity { background: var(--critical); color: white; }
+.review-finding.warning .finding-severity { background: var(--warning); color: #1e1e1e; }
+.review-finding.info .finding-severity { background: var(--accent); color: white; }
+.finding-text { flex: 1; }
+.finding-source { font-size: 10px; color: var(--text-secondary); }
+
+.review-actions { margin: 12px 0; }
+.review-action-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+}
+.action-priority {
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--accent);
+    min-width: 24px;
+}
+.action-text { font-size: 12px; line-height: 1.4; }
+.action-reason { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+.review-process-comparison { margin: 12px 0; }
+.review-process-bars { margin-top: 8px; }
+.review-process-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.review-best-for {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+}
+
+/* Agent cards (collapsible) */
+.review-agent-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    margin-bottom: 6px;
+    border-left: 3px solid var(--accent);
+    overflow: hidden;
+}
+.review-agent-card.agent-error { border-left-color: var(--critical); }
+.review-agent-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    user-select: none;
+}
+.review-agent-header:hover { background: var(--bg-hover); }
+.review-agent-icon { font-size: 16px; }
+.review-agent-name { font-weight: 600; font-size: 13px; flex: 1; }
+.review-agent-score { font-weight: 800; font-size: 14px; color: var(--accent); }
+.review-agent-toggle {
+    font-size: 10px;
+    color: var(--text-secondary);
+    transition: transform 0.2s;
+}
+.review-agent-card.open .review-agent-toggle { transform: rotate(180deg); }
+.review-agent-body {
+    display: none;
+    padding: 0 12px 12px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+.review-agent-card.open .review-agent-body { display: block; }
+.review-agent-assessment { margin-bottom: 8px; }
+.review-agent-section { margin-top: 8px; }
+.review-agent-section ul {
+    margin: 4px 0 0 16px;
+    padding: 0;
+}
+.review-agent-section li { margin-bottom: 4px; }
+
 /* Decision Summary Panel */
 .decision-card {
     background: var(--bg-secondary);

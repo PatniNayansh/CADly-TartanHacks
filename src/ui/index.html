@@ -137,10 +137,27 @@
 
         <!-- ====== TAB: AI Review ====== -->
         <div class="tab-content" id="tab-review">
-            <div class="placeholder-tab">
-                <h3>AI Design Review Board</h3>
-                <p>Coming in Phase 9. Four specialist AI agents review your part and produce a unified report.</p>
+            <div class="controls">
+                <button class="btn btn-primary" id="reviewBtn" onclick="runAIReview()">
+                    Run AI Design Review
+                </button>
             </div>
+            <div id="reviewPlaceholder" class="placeholder-tab">
+                <h3>AI Design Review Board</h3>
+                <p>Click <strong>Run AI Design Review</strong> to have 4 specialist AI agents analyze your part.</p>
+                <div class="review-agents-preview">
+                    <span class="agent-chip">&#9881; CNC Expert</span>
+                    <span class="agent-chip">&#9971; FDM Expert</span>
+                    <span class="agent-chip">&#9878; Materials Engineer</span>
+                    <span class="agent-chip">&#128176; Cost Optimizer</span>
+                </div>
+            </div>
+            <div id="reviewLoading" style="display: none;" class="ai-loading-bar">
+                <div class="spinner-small"></div>
+                <span>AI agents reviewing your design...</span>
+            </div>
+            <div id="reviewResults"></div>
+            <div id="reviewDedalusBadge"></div>
         </div>
 
         <!-- ====== TAB: Sustainability ====== -->
@@ -183,6 +200,7 @@
     <script src="/static/components/violations.js"></script>
     <script src="/static/components/sustainability.js"></script>
     <script src="/static/components/decision_summary.js"></script>
+    <script src="/static/components/review.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>

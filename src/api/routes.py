@@ -296,12 +296,86 @@ async def materials():
     return error_response("NOT_IMPLEMENTED", "Material recommendations coming in Phase 7", 501)
 
 
-# ---- AI Review Endpoint (placeholder — Phase 9) ----
+# ---- AI Design Review ----
 
 @router.post("/review")
 async def review(request: Request):
-    """Run AI design review. (Phase 9)"""
-    return error_response("NOT_IMPLEMENTED", "AI review coming in Phase 9", 501)
+    """Run AI design review with 4 specialist agents via Dedalus.
+
+    Returns immediately with status. Full results arrive via WebSocket 'ai_review' event.
+    """
+    client = _get_client()
+    try:
+        from src.fusion.geometry import GeometryHelper
+        from src.dfm.engine import DFMEngine
+
+        geo = GeometryHelper(client)
+        bodies = await geo.get_bodies()
+        if not bodies:
+            return error_response("NO_BODIES", "No bodies found in design", 404)
+
+        body = bodies[0]
+
+        # Run analysis to get violations + costs for context
+        engine = DFMEngine()
+        report = await engine.analyze(client)
+        estimator = CostEstimator()
+        cost_estimates = estimator.estimate_all(
+            volume_cm3=body.volume_cm3,
+            area_cm2=body.area_cm2,
+            bounding_box=body.bounding_box,
+            face_count=body.face_count,
+        )
+
+        # Package part data for agents
+        part_data = {
+            "part_name": report.part_name,
+            "volume_cm3": round(body.volume_cm3, 4),
+            "area_cm2": round(body.area_cm2, 4),
+            "bounding_box": body.bounding_box,
+            "face_count": body.face_count,
+            "violations": [v.to_dict() for v in report.violations],
+            "violation_count": report.violation_count,
+            "critical_count": report.critical_count,
+            "is_manufacturable": report.is_manufacturable,
+            "cost_estimates": [e.to_dict() for e in cost_estimates],
+        }
+
+        # Fire background task — results arrive via WebSocket
+        asyncio.create_task(_run_ai_review(part_data))
+
+        return success_response({
+            "status": "review_started",
+            "message": "AI Design Review Board is analyzing your part. Results will arrive via WebSocket.",
+        })
+
+    except FusionError as e:
+        return error_response("FUSION_ERROR", str(e))
+    except Exception as e:
+        logger.error(f"Review start failed: {e}")
+        return error_response("REVIEW_FAILED", str(e))
+    finally:
+        await client.close()
+
+
+async def _run_ai_review(part_data: dict):
+    """Background task: run 4-agent design review and push results via WebSocket."""
+    try:
+        from src.agents.review_board import ReviewBoard
+        from src.agents.report_synthesizer import format_review_for_ui
+
+        await manager.send_status("AI agents reviewing your design...", 0.1)
+        board = ReviewBoard()
+        raw_review = await board.run_review(part_data)
+
+        await manager.send_status("Synthesizing expert opinions...", 0.8)
+        ui_review = format_review_for_ui(raw_review)
+
+        await manager.send_result("ai_review", ui_review)
+        await manager.send_status("AI Design Review complete!", 1.0)
+    except Exception as e:
+        logger.error(f"Background AI review failed: {e}")
+        await manager.send_result("ai_review", {"error": str(e)})
 
 
 # ---- Report Endpoint (placeholder — Phase 10) ----

@@ -71,6 +71,23 @@ function handleWsMessage(msg) {
             renderSummary(msg.data);
             renderViolations(msg.data.violations);
         }
+    } else if (msg.type === 'ai_review') {
+        // AI Design Review Board results
+        const loading = document.getElementById('reviewLoading');
+        if (loading) loading.style.display = 'none';
+
+        if (msg.data && !msg.data.error) {
+            if (typeof renderAIReview === 'function') renderAIReview(msg.data);
+        } else {
+            const container = document.getElementById('reviewResults');
+            if (container) {
+                container.innerHTML = `
+                    <div class="ai-unavailable">
+                        <span class="ai-unavailable-icon">&#129302;</span>
+                        <span>AI Design Review unavailable: ${msg.data?.error || 'Unknown error'}</span>
+                    </div>`;
+            }
+        }
     } else if (msg.type === 'ai_sustainability') {
         // AI agent swarm results for sustainability tab
         const loading = document.getElementById('aiSustainabilityLoading');
