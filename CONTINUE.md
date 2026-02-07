@@ -6,41 +6,48 @@ Read CLAUDE.md and PROGRESS.md first. Then continue the task list below.
 ## PROJECT STATE
 - Working directory: C:\Users\patni\Documents\Projects\cadly-v2
 - Git branch: main
-- Last commit: feat: add process switch simulator
+- Last commit: 2a78d59 — feat: add process switch simulator
 - Current phase: Hackathon polish — targeting 7 TartanHacks prize tracks
 - Fusion add-in location: C:\Users\patni\AppData\Roaming\Autodesk\Autodesk Fusion 360\API\AddIns\MCP\MCP.py
 - Python venv: .venv/ (all deps installed including websockets)
 
-## WHAT WAS COMPLETED THIS SESSION (2026-02-06, Session 3)
+## WHAT WAS COMPLETED (Sessions 3-4, 2026-02-06)
 1. Sustainability polish: carbon equivalencies in savings tips, waste material labels + weight equivalencies, process score breakdown cards with sub-score bars, graceful Dedalus unavailable handling (lazy import + API key check + UI fallback)
 2. Decision Summary Panel: consolidated "TL;DR" at top of Analysis tab showing recommended process, cost, green score, violation count
 3. AI Design Review Board (R3): 4 specialist agents (CNC Expert, FDM Expert, Materials Engineer, Cost Optimizer) + synthesis via Dedalus. POST /api/review endpoint, background WebSocket push, collapsible agent cards UI, Powered by Dedalus badge
 4. Demo Polish: tab fade transitions, analyze button spinner, fix button animation (Fixing -> Fixed! + card fade), violation slide-in, updated branding, about footer
+5. Process Switch Simulator (R2): redesign_planner.py (step-by-step roadmap, templates for all 13 rules), comparison.py (side-by-side with verdict), /api/simulate endpoint, simulator.js UI (verdict banner, violation diff, cost impact, process comparison grid, redesign roadmap)
 
-## GIT LOG (5 commits this session)
+## GIT LOG (6 commits across sessions 3-4)
 - f4c59c7 feat: polish sustainability tab for hackathon judges
 - 65ce080 feat: add unified decision summary panel
 - 0cf0611 feat: add AI design review board with 4 specialist agents
 - 5fa2287 feat: wire AI design review API and render agent panels
 - d067212 feat: UI polish and demo readiness
+- 2a78d59 feat: add process switch simulator
 
 ## WHAT TO DO NEXT (in order)
 
 ### Priority 1: Phase 7 — Machine + Material Recommendation
-- Create `data/machines.json` (15-20 real machines with specs)
-- Create `data/materials.json` (20-30 materials with properties)
-- `src/recommend/machine_db.py`, `machine_matcher.py`
-- `src/recommend/material_db.py`, `material_matcher.py`
-- `src/ui/components/recommend.js`
-- Wire up Recommend tab
+- Create `data/machines.json` (15-20 real machines with specs: build volume, tolerance, materials, price)
+- Create `data/materials.json` (20-30 materials with properties: strength, heat resistance, cost, density)
+- Create `src/recommend/__init__.py`
+- Create `src/recommend/machine_db.py` — load machines.json, filter by build volume + process
+- Create `src/recommend/machine_matcher.py` — match part to machines, rank by fit
+- Create `src/recommend/material_db.py` — load materials.json, filter by process
+- Create `src/recommend/material_matcher.py` — match part needs to materials, spider chart data
+- Implement `/api/machines` GET endpoint (currently returns 501)
+- Implement `/api/materials` GET endpoint (currently returns 501)
+- Create `src/ui/components/recommend.js` — machine + material recommendation UI
+- Wire up Recommend tab in index.html (currently placeholder)
 
-### Priority 3: Test Everything End-to-End with Fusion 360
+### Priority 2: Test Everything End-to-End with Fusion 360
 - Start server, create test part, run full analysis
 - Test each tab: Analysis, Costs, Simulator, Recommend, AI Review, Sustainability
 - Fix any runtime bugs
 - Test auto-fix workflow
 
-### Priority 4: Pitch Prep
+### Priority 3: Pitch Prep
 - Update README.md to be pitch-ready
 - Create PITCH_NOTES.md with talking points per track
 
@@ -72,6 +79,7 @@ curl -X POST http://localhost:5000/execute_script -H "Content-Type: application/
 - Start server: `.venv\Scripts\python.exe -m uvicorn src.main:app --host 0.0.0.0 --port 3000 --app-dir .`
 - execute_script uses `"code"` param (not `"script"`)
 - Dedalus integration: dedalus_labs package used for AI Review + AI Sustainability. Lazy import handles missing package gracefully.
+- Models exist for machines (src/models/machines.py) and materials (src/models/materials.py) already — use them.
 
 ## TARTANHACKS PRIZE TRACKS
 1. Best Overall — full platform polish
@@ -87,10 +95,11 @@ curl -X POST http://localhost:5000/execute_script -H "Content-Type: application/
 - src/fusion/ wraps HTTP calls to port 5000
 - src/dfm/engine.py orchestrates analysis
 - src/fixes/ applies fixes (hole, corner, wall)
+- src/simulator/ process switch simulation (violation diff, cost delta, redesign roadmap)
 - src/sustainability/ calculates waste, carbon, green score + AI enrichment
 - src/agents/ runs 4-agent design review via Dedalus
-- src/api/routes.py: 12 endpoints total
+- src/api/routes.py: 13 endpoints (health, analyze, cost, cost/compare, fix, fix-all, sustainability, simulate, review, machines, materials, report)
 
 ## RESUME COMMAND
 After reading CLAUDE.md and PROGRESS.md, start with:
-Complete Phase 6 — Process Switch Simulator (implement /api/simulate + simulator.js UI)
+Phase 7 — Machine + Material Recommendation (create data files, recommend module, API endpoints, UI)
