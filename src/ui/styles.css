@@ -454,3 +454,316 @@ select {
     color: var(--suggestion);
     font-weight: 600;
 }
+
+/* Agent UI Styles */
+.agent-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.agent-header {
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.agent-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 4px;
+}
+
+.agent-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* Dropzone */
+.dropzone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 16px;
+    background: var(--bg-card);
+}
+
+.dropzone:hover {
+    border-color: var(--accent);
+    background: var(--bg-hover);
+}
+
+.dropzone.drag-over {
+    border-color: var(--accent);
+    background: rgba(0, 120, 212, 0.1);
+    transform: scale(1.02);
+}
+
+.dropzone-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+    opacity: 0.6;
+}
+
+.dropzone p {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+/* Form Groups */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.form-group textarea,
+.form-group input[type="text"],
+.form-group input[type="number"] {
+    width: 100%;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.form-group textarea:focus,
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+/* Analysis Options */
+.analysis-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.analysis-options .form-group {
+    margin-bottom: 0;
+}
+
+.analysis-options select {
+    width: 100%;
+}
+
+/* Agent Button */
+.btn-agent {
+    width: 100%;
+    font-size: 15px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+/* Agent Progress */
+.agent-progress {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.progress-phases {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 16px;
+}
+
+.phase-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.4;
+    transition: opacity 0.3s;
+}
+
+.phase-indicator.active {
+    opacity: 1;
+}
+
+.phase-indicator.complete {
+    opacity: 1;
+}
+
+.phase-indicator.complete .phase-icon {
+    filter: brightness(1.5);
+}
+
+.phase-icon {
+    font-size: 24px;
+}
+
+.phase-name {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-primary);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+    width: 0%;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px var(--accent);
+}
+
+.progress-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.progress-text.model-handoff {
+    color: var(--accent);
+    font-weight: 600;
+    animation: pulse 0.5s;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Agent Findings */
+.agent-findings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.finding-card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 14px;
+    border-left: 3px solid var(--border);
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: all 0.3s ease;
+}
+
+.finding-card.slide-in {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.finding-card.severity-critical {
+    border-left-color: var(--critical);
+    background: var(--critical-bg);
+}
+
+.finding-card.severity-warning {
+    border-left-color: var(--warning);
+    background: var(--warning-bg);
+}
+
+.finding-card.severity-suggestion {
+    border-left-color: var(--suggestion);
+    background: var(--suggestion-bg);
+}
+
+.finding-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.finding-icon {
+    font-size: 18px;
+}
+
+.finding-title {
+    font-size: 13px;
+    font-weight: 600;
+    flex: 1;
+}
+
+.finding-details {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 10px;
+    font-size: 12px;
+}
+
+.finding-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.finding-stat .stat-label {
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.finding-stat .stat-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Analysis Complete */
+.analysis-complete {
+    background: var(--suggestion-bg);
+    border: 1px solid var(--suggestion);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.success-icon {
+    font-size: 32px;
+}
+
+.success-text strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--suggestion);
+}
+
+.success-text p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0;
+}

@@ -2,12 +2,14 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, File, Form, UploadFile
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 import logging
+import asyncio
+import json
 
 from src.dfm.analyzer import DFMAnalyzer
 from src.dfm.violations import Severity
@@ -45,10 +47,27 @@ async def root():
 async def health():
     """Check if Fusion 360 is connected."""
     try:
-        resp = requests.get(f"{FUSION_URL}/test_connection", timeout=5)
-        return {"success": True, "fusion_connected": resp.status_code == 200}
-    except Exception:
+        resp = requests.get(f"{FUSION_URL}/get_body_properties", timeout=5)
+        connected = resp.status_code == 200
+        logger.info(f"Fusion health check: status={resp.status_code}, connected={connected}")
+        return {"success": True, "fusion_connected": connected}
+    except Exception as e:
+        logger.warning(f"Fusion health check failed: {e}")
         return {"success": True, "fusion_connected": False}
+
+
+@app.get("/api/debug/paths")
+async def debug_paths():
+    """Debug endpoint to show file paths."""
+    import os
+    return {
+        "ui_dir": ui_dir,
+        "ui_dir_exists": os.path.exists(ui_dir),
+        "index_html_path": os.path.join(ui_dir, "index.html"),
+        "index_html_exists": os.path.exists(os.path.join(ui_dir, "index.html")),
+        "cwd": os.getcwd(),
+        "__file__": __file__,
+    }
 
 
 @app.post("/api/analyze")
@@ -232,6 +251,151 @@ async def cost():
             "part_area_cm2": round(first_body.get("area_cm2", 0), 2),
         }
     }
+
+
+@app.post("/api/agent/analyze")
+async def agent_analyze(
+    file: UploadFile = File(None),
+    machine_text: str = Form(""),
+    process: str = Form("all"),
+    quantity: int = Form(1),
+    use_fusion: bool = Form(True),
+    strategy: str = Form("auto"),
+    extraction_model: str = Form(""),
+    reasoning_model: str = Form(""),
+):
+    """
+    Fake Dedalus agent endpoint - streams SSE events using real local analysis.
+    This creates a realistic AI streaming experience for demos while using fast local code.
+    """
+
+    async def event_generator():
+        """Generate Server-Sent Events with realistic delays."""
+        try:
+            # Phase 1: Extraction (fake parsing)
+            extraction_steps = [0, 0.25, 0.75, 1.0]
+            for progress in extraction_steps:
+                yield f"event: phase\ndata: {json.dumps({'type': 'phase', 'phase': 'extraction', 'message': '🔍 Parsing geometry...', 'progress': progress})}\n\n"
+                await asyncio.sleep(0.25)
+
+            # Model handoff (if auto strategy)
+            if strategy == "auto":
+                yield f"event: model_handoff\ndata: {json.dumps({'type': 'model_handoff', 'phase': 'reasoning', 'message': '🔄 Switching to Claude Sonnet for reasoning...', 'progress': 0.5})}\n\n"
+                await asyncio.sleep(0.3)
+
+            # Phase 2: Reasoning (call real analysis)
+            reasoning_steps = [0, 0.25, 0.75, 1.0]
+            for i, progress in enumerate(reasoning_steps):
+                yield f"event: phase\ndata: {json.dumps({'type': 'phase', 'phase': 'reasoning', 'message': '🤖 Running AI-powered DFM analysis...', 'progress': progress})}\n\n"
+
+                # Actually run analysis during reasoning phase (in background)
+                if i == len(reasoning_steps) - 1:  # Last step
+                    # Get real violations from local analyzer
+                    analyzer = DFMAnalyzer(FUSION_URL)
+                    analysis_result = analyzer.analyze(process)
+                    violations = analysis_result.violations
+                else:
+                    await asyncio.sleep(0.375)
+
+            # Stream findings (one per violation)
+            for violation in violations:
+                finding_data = {
+                    'rule_id': violation.rule_id,
+                    'severity': violation.severity.name,
+                    'message': violation.message,
+                    'feature_id': violation.feature_id,
+                    'current_value': violation.current_value,
+                    'required_value': violation.required_value,
+                    'fix_available': violation.fixable,
+                }
+                yield f"event: finding\ndata: {json.dumps({'type': 'finding', 'data': finding_data})}\n\n"
+                await asyncio.sleep(0.2)
+
+            # Get real cost estimates
+            try:
+                resp = requests.get(f"{FUSION_URL}/get_body_properties", timeout=20)
+                body_props = resp.json()
+                bodies = body_props.get("bodies", [])
+                first_body = bodies[0] if bodies else {}
+
+                estimator = CostEstimator()
+                cost_estimates = estimator.estimate_all(
+                    volume_cm3=first_body.get("volume_cm3", 0),
+                    area_cm2=first_body.get("area_cm2", 0),
+                    bounding_box=first_body.get("bounding_box", {"min": [0, 0, 0], "max": [1, 1, 1]}),
+                )
+                cost_data = [e.to_dict() for e in cost_estimates]
+            except Exception as e:
+                logger.warning(f"Cost estimation failed: {e}")
+                cost_data = []
+
+            # Final report
+            final_data = {
+                'part_name': analysis_result.part_name,
+                'is_manufacturable': analysis_result.is_manufacturable,
+                'recommended_process': analysis_result.recommended_process,
+                'findings': [
+                    {
+                        'rule_id': v.rule_id,
+                        'severity': v.severity.name,
+                        'message': v.message,
+                        'feature_id': v.feature_id,
+                        'current_value': v.current_value,
+                        'required_value': v.required_value,
+                        'fix_available': v.fixable,
+                    }
+                    for v in violations
+                ],
+                'blocking_issues': [
+                    {
+                        'rule_id': v.rule_id,
+                        'severity': v.severity.name,
+                        'message': v.message,
+                        'feature_id': v.feature_id,
+                        'current_value': v.current_value,
+                        'required_value': v.required_value,
+                        'fix_available': v.fixable,
+                    }
+                    for v in violations if v.severity == Severity.CRITICAL
+                ],
+                'warnings': [
+                    {
+                        'rule_id': v.rule_id,
+                        'severity': v.severity.name,
+                        'message': v.message,
+                        'feature_id': v.feature_id,
+                        'current_value': v.current_value,
+                        'required_value': v.required_value,
+                        'fix_available': v.fixable,
+                    }
+                    for v in violations if v.severity == Severity.WARNING
+                ],
+                'cost_estimates': cost_data,
+                'cost_analysis': {
+                    'strategy': strategy,
+                    'total_cost': cost_data[0]['total_cost'] if cost_data else 0,
+                }
+            }
+
+            yield f"event: final\ndata: {json.dumps({'type': 'final', 'data': final_data})}\n\n"
+
+        except Exception as e:
+            logger.error(f"Agent analysis failed: {e}")
+            error_data = {
+                'type': 'error',
+                'message': f'Analysis failed: {str(e)}'
+            }
+            yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        }
+    )
 
 
 if __name__ == "__main__":

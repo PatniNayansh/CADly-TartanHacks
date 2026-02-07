@@ -200,8 +200,21 @@ async function applyFix(ruleId, featureId, targetValue, currentValue) {
 
         if (data.success) {
             showToast(data.message, 'success');
-            // Re-run analysis after fix
-            setTimeout(runAnalysis, 1500);
+
+            // Immediately remove this violation card from the UI
+            const card = btn.closest('.violation-card');
+            if (card) {
+                card.style.transition = 'opacity 0.3s, transform 0.3s';
+                card.style.opacity = '0';
+                card.style.transform = 'translateX(20px)';
+                setTimeout(() => card.remove(), 300);
+            }
+
+            // Update summary counts
+            updateSummaryAfterFix(ruleId);
+
+            // Re-run analysis after longer delay to pick up any remaining issues
+            setTimeout(runAnalysis, 3000);
         } else {
             showToast(data.message || 'Fix failed', 'error');
             btn.textContent = originalText;
@@ -211,6 +224,50 @@ async function applyFix(ruleId, featureId, targetValue, currentValue) {
         showToast(`Fix error: ${err.message}`, 'error');
         btn.textContent = originalText;
         btn.disabled = false;
+    }
+}
+
+function updateSummaryAfterFix(ruleId) {
+    // Decrement violation counts in the summary
+    const totalEl = document.getElementById('totalViolations');
+    const criticalEl = document.getElementById('criticalCount');
+    const warningEl = document.getElementById('warningCount');
+
+    if (totalEl) {
+        const current = parseInt(totalEl.textContent) || 0;
+        totalEl.textContent = Math.max(0, current - 1);
+    }
+
+    // Determine severity from rule_id to update the right counter
+    const criticalRules = ['FDM-001', 'SLA-001', 'CNC-001'];
+    const warningRules = ['FDM-003', 'CNC-002'];
+
+    if (criticalRules.includes(ruleId) && criticalEl) {
+        const current = parseInt(criticalEl.textContent) || 0;
+        criticalEl.textContent = Math.max(0, current - 1);
+    } else if (warningRules.includes(ruleId) && warningEl) {
+        const current = parseInt(warningEl.textContent) || 0;
+        warningEl.textContent = Math.max(0, current - 1);
+    }
+
+    // Check if no violations left - show all-clear
+    const remaining = document.querySelectorAll('.violation-card');
+    if (remaining.length <= 1) {
+        // The card being removed is still in DOM briefly, so <=1
+        setTimeout(() => {
+            const list = document.getElementById('violationsList');
+            const stillRemaining = document.querySelectorAll('.violation-card');
+            if (stillRemaining.length === 0 && list) {
+                list.innerHTML = `
+                    <div class="all-clear">
+                        <div class="all-clear-icon">&#10003;</div>
+                        <p>All issues fixed!</p>
+                    </div>
+                `;
+                const fixAllBtn = document.getElementById('fixAllBtn');
+                if (fixAllBtn) fixAllBtn.style.display = 'none';
+            }
+        }, 400);
     }
 }
 
@@ -231,12 +288,24 @@ async function fixAll() {
 
         if (data.success) {
             showToast(data.message, 'success');
+
+            // Immediately remove all fixable violation cards
+            document.querySelectorAll('.violation-card .btn-fix').forEach(fixBtn => {
+                const card = fixBtn.closest('.violation-card');
+                if (card) {
+                    card.style.transition = 'opacity 0.3s, transform 0.3s';
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateX(20px)';
+                    setTimeout(() => card.remove(), 300);
+                }
+            });
+            btn.style.display = 'none';
         } else {
             showToast(data.message || 'Fix-all failed', 'error');
         }
 
-        // Re-analyze after fixes
-        setTimeout(runAnalysis, 2000);
+        // Re-analyze after longer delay
+        setTimeout(runAnalysis, 3500);
     } catch (err) {
         showToast(`Fix-all error: ${err.message}`, 'error');
     } finally {

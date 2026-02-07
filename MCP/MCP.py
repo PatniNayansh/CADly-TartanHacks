@@ -1547,9 +1547,12 @@ def _analyze_walls(design):
                 continue
             checked.add(pair_key)
 
-            # Check if normals are anti-parallel (dot ≈ -1)
+            # Check if normals are anti-parallel (dot ≈ -1) OR parallel (dot ≈ +1)
+            # Parallel close faces occur in shelled bodies (inner/outer wall surfaces)
             dot = n1.x * n2.x + n1.y * n2.y + n1.z * n2.z
-            if abs(dot + 1.0) < 0.05:
+            is_antiparallel = abs(dot + 1.0) < 0.05
+            is_parallel = abs(dot - 1.0) < 0.05
+            if is_antiparallel or is_parallel:
                 # Measure distance: project point from face1 onto face2's plane
                 p1 = f1.pointOnFace
                 p2 = f2.pointOnFace

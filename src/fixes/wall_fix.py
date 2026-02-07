@@ -34,52 +34,76 @@ def apply_wall_fix(
     face_parts = feature_id.replace("wall_", "").split("_")
     face1, face2 = int(face_parts[0]), int(face_parts[1])
 
-    # Use execute_script to find cut extrudes and try adjusting each one
+    target_cm = target_thickness_mm / 10.0
+
+    # Use execute_script to find shell features or cut extrudes and adjust
     script = textwrap.dedent(f"""\
         import adsk.core
         import adsk.fusion
 
         increase = {increase_cm}
+        target_cm = {target_cm}
         fixed = False
         tried = []
+        fixed_shells = []
 
-        # Get cut extrude features
-        extrudes = rootComp.features.extrudeFeatures
-        for ei in range(extrudes.count):
-            ext = extrudes.item(ei)
-            # Only look at cut operations (operation == 1)
-            if ext.operation != 1:
+        # First try: Shell features — fix ALL that are under target thickness
+        shells = rootComp.features.shellFeatures
+        for si in range(shells.count):
+            shell = shells.item(si)
+            old_val = shell.insideThickness.value  # in cm
+            param_name = shell.insideThickness.name if hasattr(shell.insideThickness, 'name') else 'shellThickness'
+
+            # Skip shells already at or above target thickness
+            if old_val >= target_cm - 0.001:
+                tried.append({{'name': param_name, 'old_cm': round(old_val, 4), 'skipped': True, 'reason': 'already at target'}})
                 continue
 
-            extent = ext.extentOne
-            if not hasattr(extent, 'distance'):
-                continue
-
-            param = extent.distance
-            old_val = param.value  # in cm, negative for cuts
-            param_name = param.name if hasattr(param, 'name') else 'unknown'
-
-            # For negative cuts: reduce magnitude (make less deep)
-            # For positive cuts: also reduce magnitude
-            if old_val < 0:
-                new_val = old_val + increase
+            tried.append({{'name': param_name, 'old_cm': round(old_val, 4), 'new_cm': round(target_cm, 4), 'type': 'shell'}})
+            shell.insideThickness.value = target_cm
+            if abs(shell.insideThickness.value - target_cm) < 0.001:
+                fixed = True
+                fixed_shells.append(param_name)
             else:
-                new_val = old_val - increase
+                shell.insideThickness.value = old_val
 
-            tried.append({{'name': param_name, 'old_cm': round(old_val, 4), 'new_cm': round(new_val, 4)}})
-            param.value = new_val
+        if fixed_shells:
+            result['param_name'] = ', '.join(fixed_shells)
+            result['new_depth_cm'] = round(target_cm, 4)
 
-            # Check if it actually changed
-            if abs(param.value - new_val) > 0.001:
-                # Fusion rejected the change
-                param.value = old_val
-                continue
+        # Second try: Cut-extrude features (only if no shells were fixed)
+        if not fixed:
+            extrudes = rootComp.features.extrudeFeatures
+            for ei in range(extrudes.count):
+                ext = extrudes.item(ei)
+                if ext.operation != 1:
+                    continue
 
-            fixed = True
-            result['param_name'] = param_name
-            result['old_depth_cm'] = round(old_val, 4)
-            result['new_depth_cm'] = round(new_val, 4)
-            break
+                extent = ext.extentOne
+                if not hasattr(extent, 'distance'):
+                    continue
+
+                param = extent.distance
+                old_val = param.value
+                param_name = param.name if hasattr(param, 'name') else 'unknown'
+
+                if old_val < 0:
+                    new_val = old_val + increase
+                else:
+                    new_val = old_val - increase
+
+                tried.append({{'name': param_name, 'old_cm': round(old_val, 4), 'new_cm': round(new_val, 4), 'type': 'extrude'}})
+                param.value = new_val
+
+                if abs(param.value - new_val) > 0.001:
+                    param.value = old_val
+                    continue
+
+                fixed = True
+                result['param_name'] = param_name
+                result['old_depth_cm'] = round(old_val, 4)
+                result['new_depth_cm'] = round(new_val, 4)
+                break
 
         result['fixed'] = fixed
         result['tried'] = tried
@@ -106,7 +130,7 @@ def apply_wall_fix(
             old_value=current_thickness_mm, new_value=target_thickness_mm,
         )
 
-    wait_for_fusion(1.5)
+    wait_for_fusion(2.0)
 
     # Validate: check that the thin wall got thicker
     try:
@@ -115,17 +139,20 @@ def apply_wall_fix(
         for w in walls_after.get("walls", []):
             faces = {w["face_index_1"], w["face_index_2"]}
             if face1 in faces or face2 in faces:
-                if w["thickness_mm"] >= target_thickness_mm - 0.2:
+                if w["thickness_mm"] >= target_thickness_mm - 0.01:
                     wall_fixed = True
                     break
 
         if not wall_fixed:
-            # Check if ANY thin wall improved (face indices may shift)
-            min_wall = min(
-                (w["thickness_mm"] for w in walls_after.get("walls", [])),
-                default=0,
-            )
-            if min_wall >= target_thickness_mm - 0.2:
+            # Check if ANY thin wall improved (face indices may shift after fix)
+            # Only consider actual walls (< 10mm) — skip large distances between
+            # opposite sides of the part which aren't real walls.
+            real_walls = [
+                w["thickness_mm"] for w in walls_after.get("walls", [])
+                if w["thickness_mm"] < 10.0
+            ]
+            min_wall = min(real_walls, default=target_thickness_mm)
+            if min_wall >= target_thickness_mm - 0.01:
                 wall_fixed = True
 
         if not wall_fixed:

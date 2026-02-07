@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadly - DFM Analysis</title>
+    <title>Cadly - DFM Analysis WITH AGENT UI TEST123</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -31,6 +31,94 @@
                 <option value="sla">SLA Only</option>
                 <option value="cnc">CNC Only</option>
             </select>
+        </div>
+
+        <!-- AI Agent Section -->
+        <div class="agent-section" id="agentSection">
+            <div class="agent-header">
+                <h2 class="agent-title">🤖 AI-Powered DFM Analysis</h2>
+                <p class="agent-subtitle">Upload a file or use live Fusion 360 data</p>
+            </div>
+
+            <!-- File Upload Dropzone -->
+            <div class="dropzone" id="agentDropzone">
+                <div class="dropzone-icon">📤</div>
+                <p>Drop STL/OBJ file here or click to upload</p>
+                <input type="file" id="agentFileInput" accept=".stl,.obj" style="display: none;">
+            </div>
+
+            <!-- Machine Configuration -->
+            <div class="form-group">
+                <label for="machineText">Available Machines (optional)</label>
+                <textarea
+                    id="machineText"
+                    placeholder="e.g., I have a Bambu X1C and access to a CNC mill"
+                    rows="2"
+                ></textarea>
+            </div>
+
+            <!-- Analysis Options -->
+            <div class="analysis-options">
+                <div class="form-group">
+                    <label for="agentProcessSelect">Process</label>
+                    <select id="agentProcessSelect">
+                        <option value="all">All Processes</option>
+                        <option value="fdm">FDM Only</option>
+                        <option value="sla">SLA Only</option>
+                        <option value="cnc">CNC Only</option>
+                        <option value="injection_molding">Injection Molding</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="quantityInput">Quantity</label>
+                    <input type="number" id="quantityInput" value="1" min="1" max="10000">
+                </div>
+
+                <div class="form-group">
+                    <label for="strategySelect">AI Strategy</label>
+                    <select id="strategySelect">
+                        <option value="auto">Auto (Recommended)</option>
+                        <option value="budget">Budget (Fast)</option>
+                        <option value="quality">Quality (Thorough)</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Use Fusion Checkbox -->
+            <div class="form-group checkbox-group">
+                <label>
+                    <input type="checkbox" id="useFusionCheckbox" checked>
+                    Use live Fusion 360 data
+                </label>
+            </div>
+
+            <!-- Analyze Button -->
+            <button class="btn btn-primary btn-agent" id="agentAnalyzeBtn">
+                🤖 Analyze with AI Agent
+            </button>
+
+            <!-- Progress Container -->
+            <div id="agentProgress" class="agent-progress" style="display: none;">
+                <div class="progress-phases">
+                    <div class="phase-indicator" id="phase-extraction">
+                        <span class="phase-icon">🔍</span>
+                        <span class="phase-name">Extracting</span>
+                    </div>
+                    <div class="phase-indicator" id="phase-reasoning">
+                        <span class="phase-icon">🤖</span>
+                        <span class="phase-name">Analyzing</span>
+                    </div>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="agentProgressBar"></div>
+                </div>
+                <p class="progress-text" id="agentProgressText">Starting analysis...</p>
+            </div>
+
+            <!-- Findings Container -->
+            <div id="agentFindings" class="agent-findings"></div>
         </div>
 
         <!-- Loading State -->
@@ -86,5 +174,6 @@
     </div>
 
     <script src="/static/app.js"></script>
+    <script src="/static/components/agent.js"></script>
 </body>
 </html>
