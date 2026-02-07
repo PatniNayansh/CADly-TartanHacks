@@ -38,10 +38,68 @@
 
         <!-- ====== TAB: Analysis ====== -->
         <div class="tab-content active" id="tab-analysis">
-            <!-- Controls -->
+            <!-- AI Agent Analysis Section (New!) -->
+            <div class="agent-section">
+                <h3 class="section-subtitle">🤖 AI-Powered Analysis</h3>
+
+                <!-- File Upload Dropzone -->
+                <div id="dropzone" class="dropzone">
+                    <div class="dropzone-content">
+                        <span class="dropzone-icon">📁</span>
+                        <p>Drag & drop STL/OBJ file here or click to browse</p>
+                        <p class="dropzone-hint">Optional: Upload a file for offline analysis</p>
+                    </div>
+                    <input type="file" id="fileInput" accept=".stl,.obj" hidden>
+                </div>
+                <div id="filePreview" class="file-preview hidden"></div>
+
+                <!-- Machine Input -->
+                <div class="form-group">
+                    <label for="machineText">Available Machines (optional):</label>
+                    <textarea
+                        id="machineText"
+                        class="form-textarea"
+                        placeholder="E.g., I have a Bambu X1C FDM printer and a Haas VF-2 CNC mill"
+                        rows="2"
+                    ></textarea>
+                </div>
+
+                <!-- Options Row -->
+                <div class="options-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="useFusion"> Use live Fusion 360 (instead of file)
+                    </label>
+                    <div class="form-group-inline">
+                        <label for="processSelect">Process:</label>
+                        <select id="processSelect" class="form-select">
+                            <option value="all">All Processes</option>
+                            <option value="fdm">FDM</option>
+                            <option value="sla">SLA</option>
+                            <option value="cnc">CNC</option>
+                            <option value="injection_molding">Injection Molding</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Analyze Button -->
+                <button class="btn btn-primary btn-large" id="analyzeAgentBtn">
+                    <span class="btn-icon">🚀</span>
+                    Analyze with AI Agent
+                </button>
+
+                <!-- Streaming Progress -->
+                <div id="agentProgress" class="agent-progress hidden">
+                    <div class="phase-list" id="phaseList"></div>
+                    <div class="findings-stream" id="findingsStream"></div>
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <!-- Original Controls (Legacy) -->
             <div class="controls">
-                <button class="btn btn-primary" id="analyzeBtn" onclick="runAnalysis()">
-                    Analyze Part
+                <button class="btn btn-secondary" id="analyzeBtn" onclick="runAnalysis()">
+                    Analyze Part (Legacy)
                 </button>
                 <select id="processFilter">
                     <option value="all">All Processes</option>
@@ -233,6 +291,7 @@
     <script src="/static/components/review.js"></script>
     <script src="/static/components/simulator.js"></script>
     <script src="/static/components/recommend.js"></script>
+    <script src="/static/components/agent.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>

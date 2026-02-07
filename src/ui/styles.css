@@ -1603,3 +1603,321 @@ select {
     padding: 20px;
     font-size: 13px;
 }
+
+/* ==================== Agent UI ==================== */
+
+.agent-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.section-subtitle {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: var(--bg-primary);
+    margin-bottom: 16px;
+}
+
+.dropzone:hover, .dropzone.dragover {
+    border-color: var(--primary);
+    background: rgba(46, 165, 254, 0.05);
+}
+
+.dropzone-content {
+    pointer-events: none;
+}
+
+.dropzone-icon {
+    font-size: 40px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.dropzone p {
+    margin: 4px 0;
+    color: var(--text-primary);
+}
+
+.dropzone-hint {
+    font-size: 12px;
+    color: var(--text-secondary) !important;
+}
+
+.file-preview {
+    margin-bottom: 16px;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
+.file-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.file-size {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.clear-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px 8px;
+    transition: color 0.2s;
+}
+
+.clear-btn:hover {
+    color: var(--critical);
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+    transition: border-color 0.2s;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.options-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.form-group-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group-inline label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.form-select {
+    padding: 6px 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.btn-large {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.btn-icon {
+    margin-right: 8px;
+}
+
+.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 24px 0;
+}
+
+/* Agent Progress */
+
+.agent-progress {
+    margin-top: 20px;
+}
+
+.phase-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.phase-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    transition: all 0.3s;
+}
+
+.phase-item.complete {
+    background: rgba(46, 204, 113, 0.1);
+    border-color: rgba(46, 204, 113, 0.3);
+}
+
+.phase-icon {
+    font-size: 18px;
+    min-width: 20px;
+}
+
+.phase-name {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.phase-progress {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Findings Stream */
+
+.findings-stream {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.finding-card {
+    padding: 14px;
+    border-left: 4px solid var(--border);
+    background: var(--card-bg);
+    border-radius: 6px;
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: all 0.4s ease-out;
+}
+
+.finding-card.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.finding-card.severity-critical {
+    border-left-color: var(--critical);
+}
+
+.finding-card.severity-warning {
+    border-left-color: var(--warning);
+}
+
+.finding-card.severity-suggestion {
+    border-left-color: var(--suggestion);
+}
+
+.finding-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.rule-id {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.severity-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.severity-badge.critical {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--critical);
+}
+
+.severity-badge.warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--warning);
+}
+
+.severity-badge.suggestion {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--suggestion);
+}
+
+.finding-message {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.finding-details {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* Utility classes */
+
+.hidden {
+    display: none !important;
+}
