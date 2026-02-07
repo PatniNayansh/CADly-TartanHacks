@@ -2,8 +2,10 @@
 
 import asyncio
 import logging
-from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+import tempfile
+import os
+from fastapi import APIRouter, Request, UploadFile, File, Form
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from src.fusion.client import FusionClient, FusionError
 from src.dfm.engine import DFMEngine
@@ -12,6 +14,14 @@ from src.costs.comparison import CostComparer
 from src.fixes.fix_runner import FixRunner
 from src.api.middleware import error_response, success_response
 from src.api.websocket import manager
+
+# Dedalus agent (lazy import for graceful degradation)
+try:
+    from src.agent.orchestrator import DFMAgent
+    AGENT_AVAILABLE = True
+except ImportError:
+    AGENT_AVAILABLE = False
+    DFMAgent = None
 
 logger = logging.getLogger(__name__)
 
@@ -476,6 +486,99 @@ async def _run_ai_review(part_data: dict):
     except Exception as e:
         logger.error(f"Background AI review failed: {e}")
         await manager.send_result("ai_review", {"error": str(e)})
+
+
+# ---- Dedalus Agent Analysis (with SSE Streaming) ----
+
+@router.post("/agent/analyze")
+async def agent_analyze(
+    file: UploadFile | None = File(None),
+    machine_text: str = Form(""),
+    process: str = Form("all"),
+    quantity: int = Form(1),
+    use_fusion: bool = Form(False),
+):
+    """Run Dedalus-powered DFM analysis with SSE streaming.
+
+    Supports two input modes:
+    1. File upload: STL/OBJ file analysis
+    2. Live Fusion: query active Fusion 360 design
+
+    Returns SSE stream of analysis progress and results.
+    """
+    if not AGENT_AVAILABLE:
+        return error_response(
+            "AGENT_UNAVAILABLE",
+            "Dedalus agent not available. Install dedalus-labs package.",
+            503
+        )
+
+    # Save uploaded file to temp location
+    temp_path = None
+    if file:
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+                content = await file.read()
+                tmp.write(content)
+                temp_path = tmp.name
+        except Exception as e:
+            logger.error(f"Failed to save uploaded file: {e}")
+            return error_response("FILE_UPLOAD_FAILED", str(e), 400)
+
+    # Create agent
+    try:
+        agent = DFMAgent()
+    except Exception as e:
+        logger.error(f"Failed to create DFM agent: {e}")
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
+        return error_response("AGENT_INIT_FAILED", str(e), 500)
+
+    # SSE stream generator
+    async def event_generator():
+        """Generate SSE events from agent analysis."""
+        try:
+            async for event in agent.analyze(
+                cad_filepath=temp_path,
+                machine_text=machine_text,
+                use_fusion=use_fusion,
+                process=process,
+                quantity=quantity,
+            ):
+                # Format as SSE
+                yield f"event: {event.type}\n"
+                yield f"data: {event.model_dump_json()}\n\n"
+
+        except Exception as e:
+            # Send error event
+            logger.error(f"Agent analysis failed: {e}")
+            error_event = {
+                "type": "error",
+                "phase": "error",
+                "message": f"Analysis failed: {str(e)}",
+                "progress": 0.0,
+                "data": {"error": str(e)}
+            }
+            yield f"event: error\n"
+            yield f"data: {error_event}\n\n"
+
+        finally:
+            # Cleanup temp file
+            if temp_path and os.path.exists(temp_path):
+                try:
+                    os.unlink(temp_path)
+                except Exception as e:
+                    logger.warning(f"Failed to cleanup temp file: {e}")
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        }
+    )
 
 
 # ---- Report Endpoint (placeholder — Phase 10) ----
