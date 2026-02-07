@@ -1,0 +1,420 @@
+{
+  "materials": [
+    {
+      "id": "pla",
+      "name": "PLA",
+      "category": "thermoplastic",
+      "processes": ["FDM"],
+      "properties": {
+        "tensile_strength_mpa": 50,
+        "yield_strength_mpa": 38,
+        "elongation_pct": 6,
+        "density_g_cm3": 1.24,
+        "heat_deflection_c": 52,
+        "cost_per_kg_usd": 20,
+        "machinability_rating": 8
+      },
+      "advantages": ["Easy to print", "Low warping", "Biodegradable", "Wide color range"],
+      "disadvantages": ["Low heat resistance", "Brittle", "Not UV stable"],
+      "typical_uses": ["Visual prototypes", "Concept models", "Education"]
+    },
+    {
+      "id": "petg",
+      "name": "PETG",
+      "category": "thermoplastic",
+      "processes": ["FDM"],
+      "properties": {
+        "tensile_strength_mpa": 50,
+        "yield_strength_mpa": 42,
+        "elongation_pct": 23,
+        "density_g_cm3": 1.27,
+        "heat_deflection_c": 70,
+        "cost_per_kg_usd": 22,
+        "machinability_rating": 7
+      },
+      "advantages": ["Good impact resistance", "Chemical resistant", "Food safe", "Low warping"],
+      "disadvantages": ["Stringing during print", "Scratches easily", "Slightly hygroscopic"],
+      "typical_uses": ["Functional prototypes", "Food containers", "Outdoor parts"]
+    },
+    {
+      "id": "abs",
+      "name": "ABS",
+      "category": "thermoplastic",
+      "processes": ["FDM", "Injection Molding"],
+      "properties": {
+        "tensile_strength_mpa": 40,
+        "yield_strength_mpa": 35,
+        "elongation_pct": 30,
+        "density_g_cm3": 1.04,
+        "heat_deflection_c": 88,
+        "cost_per_kg_usd": 18,
+        "machinability_rating": 7
+      },
+      "advantages": ["Good heat resistance", "Impact resistant", "Paintable", "Acetone smoothable"],
+      "disadvantages": ["Warps during printing", "Requires heated chamber", "Emits fumes"],
+      "typical_uses": ["Enclosures", "Automotive parts", "Consumer electronics"]
+    },
+    {
+      "id": "asa",
+      "name": "ASA",
+      "category": "thermoplastic",
+      "processes": ["FDM"],
+      "properties": {
+        "tensile_strength_mpa": 42,
+        "yield_strength_mpa": 36,
+        "elongation_pct": 35,
+        "density_g_cm3": 1.07,
+        "heat_deflection_c": 90,
+        "cost_per_kg_usd": 28,
+        "machinability_rating": 7
+      },
+      "advantages": ["UV resistant", "Weather resistant", "Good heat resistance", "Similar to ABS"],
+      "disadvantages": ["More expensive than ABS", "Requires enclosed printer", "Fumes"],
+      "typical_uses": ["Outdoor parts", "Automotive trim", "Garden fixtures"]
+    },
+    {
+      "id": "tpu",
+      "name": "TPU 95A",
+      "category": "thermoplastic",
+      "processes": ["FDM"],
+      "properties": {
+        "tensile_strength_mpa": 30,
+        "yield_strength_mpa": 15,
+        "elongation_pct": 500,
+        "density_g_cm3": 1.21,
+        "heat_deflection_c": 60,
+        "shore_hardness": "95A",
+        "cost_per_kg_usd": 35,
+        "machinability_rating": 4
+      },
+      "advantages": ["Flexible", "Impact absorbing", "Chemical resistant", "Abrasion resistant"],
+      "disadvantages": ["Hard to print fast", "Stringing", "Low rigidity"],
+      "typical_uses": ["Gaskets", "Phone cases", "Vibration dampeners", "Wearables"]
+    },
+    {
+      "id": "nylon-pa6",
+      "name": "Nylon (PA6)",
+      "category": "engineering_plastic",
+      "processes": ["FDM", "Injection Molding"],
+      "properties": {
+        "tensile_strength_mpa": 70,
+        "yield_strength_mpa": 45,
+        "elongation_pct": 40,
+        "density_g_cm3": 1.13,
+        "heat_deflection_c": 80,
+        "cost_per_kg_usd": 40,
+        "machinability_rating": 6
+      },
+      "advantages": ["High strength", "Good wear resistance", "Self-lubricating", "Chemical resistant"],
+      "disadvantages": ["Absorbs moisture", "Warps heavily", "Requires dry storage"],
+      "typical_uses": ["Gears", "Bearings", "Hinges", "Functional mechanical parts"]
+    },
+    {
+      "id": "pc",
+      "name": "Polycarbonate (PC)",
+      "category": "engineering_plastic",
+      "processes": ["FDM", "Injection Molding"],
+      "properties": {
+        "tensile_strength_mpa": 65,
+        "yield_strength_mpa": 55,
+        "elongation_pct": 80,
+        "density_g_cm3": 1.20,
+        "heat_deflection_c": 130,
+        "cost_per_kg_usd": 45,
+        "machinability_rating": 6
+      },
+      "advantages": ["Extremely high impact", "Transparent option", "High heat resistance", "Flame retardant"],
+      "disadvantages": ["Hard to print", "Requires 300C+ hotend", "Hygroscopic"],
+      "typical_uses": ["Safety glasses", "Electronic housings", "High-temp enclosures"]
+    },
+    {
+      "id": "pla-cf",
+      "name": "PLA Carbon Fiber",
+      "category": "composite",
+      "processes": ["FDM"],
+      "properties": {
+        "tensile_strength_mpa": 65,
+        "yield_strength_mpa": 48,
+        "elongation_pct": 3,
+        "density_g_cm3": 1.29,
+        "heat_deflection_c": 55,
+        "cost_per_kg_usd": 40,
+        "machinability_rating": 5
+      },
+      "advantages": ["High stiffness", "Professional look", "Dimensional stability", "Lightweight"],
+      "disadvantages": ["Very brittle", "Abrasive (wears nozzles)", "Requires hardened nozzle"],
+      "typical_uses": ["Drone frames", "Tool housings", "Lightweight structural parts"]
+    },
+    {
+      "id": "standard-resin",
+      "name": "Standard Resin",
+      "category": "resin",
+      "processes": ["SLA"],
+      "properties": {
+        "tensile_strength_mpa": 38,
+        "yield_strength_mpa": 25,
+        "elongation_pct": 12,
+        "density_g_cm3": 1.15,
+        "heat_deflection_c": 50,
+        "cost_per_kg_usd": 50,
+        "machinability_rating": 3
+      },
+      "advantages": ["Excellent detail", "Smooth surface", "Easy to post-process", "Wide color range"],
+      "disadvantages": ["Brittle", "UV degradation over time", "Requires post-curing"],
+      "typical_uses": ["Visual prototypes", "Presentation models", "Miniatures"]
+    },
+    {
+      "id": "tough-resin",
+      "name": "Tough Resin",
+      "category": "resin",
+      "processes": ["SLA"],
+      "properties": {
+        "tensile_strength_mpa": 56,
+        "yield_strength_mpa": 35,
+        "elongation_pct": 24,
+        "density_g_cm3": 1.18,
+        "heat_deflection_c": 58,
+        "cost_per_kg_usd": 100,
+        "machinability_rating": 4
+      },
+      "advantages": ["ABS-like toughness", "Good impact resistance", "Snap-fit capable"],
+      "disadvantages": ["Expensive resin", "Still UV sensitive", "Requires post-curing"],
+      "typical_uses": ["Functional prototypes", "Snap-fit assemblies", "Jigs and fixtures"]
+    },
+    {
+      "id": "flexible-resin",
+      "name": "Flexible Resin",
+      "category": "resin",
+      "processes": ["SLA"],
+      "properties": {
+        "tensile_strength_mpa": 8,
+        "yield_strength_mpa": 4,
+        "elongation_pct": 75,
+        "density_g_cm3": 1.10,
+        "heat_deflection_c": 40,
+        "shore_hardness": "80A",
+        "cost_per_kg_usd": 120,
+        "machinability_rating": 2
+      },
+      "advantages": ["Rubber-like flexibility", "High detail", "Smooth surface"],
+      "disadvantages": ["Very expensive", "Low strength", "Difficult to clean"],
+      "typical_uses": ["Gaskets", "Seals", "Ergonomic grips", "Medical models"]
+    },
+    {
+      "id": "dental-resin",
+      "name": "Dental Model Resin",
+      "category": "resin",
+      "processes": ["SLA"],
+      "properties": {
+        "tensile_strength_mpa": 50,
+        "yield_strength_mpa": 30,
+        "elongation_pct": 8,
+        "density_g_cm3": 1.16,
+        "heat_deflection_c": 55,
+        "cost_per_kg_usd": 150,
+        "machinability_rating": 3
+      },
+      "advantages": ["High accuracy", "Biocompatible options", "Stone-like surface"],
+      "disadvantages": ["Very expensive", "Specialized use", "Limited colors"],
+      "typical_uses": ["Dental models", "Surgical guides", "Hearing aids"]
+    },
+    {
+      "id": "high-temp-resin",
+      "name": "High Temp Resin",
+      "category": "resin",
+      "processes": ["SLA"],
+      "properties": {
+        "tensile_strength_mpa": 51,
+        "yield_strength_mpa": 38,
+        "elongation_pct": 5,
+        "density_g_cm3": 1.22,
+        "heat_deflection_c": 238,
+        "cost_per_kg_usd": 175,
+        "machinability_rating": 3
+      },
+      "advantages": ["Extreme heat resistance (238C HDT)", "Rigid", "Good for mold masters"],
+      "disadvantages": ["Very brittle", "Expensive", "Complex post-curing"],
+      "typical_uses": ["Mold masters", "High-temp fixtures", "Under-hood automotive"]
+    },
+    {
+      "id": "aluminum-6061",
+      "name": "Aluminum 6061-T6",
+      "category": "metal",
+      "processes": ["CNC"],
+      "properties": {
+        "tensile_strength_mpa": 310,
+        "yield_strength_mpa": 276,
+        "elongation_pct": 12,
+        "density_g_cm3": 2.70,
+        "heat_deflection_c": 150,
+        "cost_per_kg_usd": 8,
+        "machinability_rating": 9
+      },
+      "advantages": ["Excellent machinability", "Lightweight", "Good corrosion resistance", "Affordable"],
+      "disadvantages": ["Not as strong as steel", "Softer — scratches easily"],
+      "typical_uses": ["Enclosures", "Brackets", "Heat sinks", "Aerospace structural"]
+    },
+    {
+      "id": "aluminum-7075",
+      "name": "Aluminum 7075-T6",
+      "category": "metal",
+      "processes": ["CNC"],
+      "properties": {
+        "tensile_strength_mpa": 572,
+        "yield_strength_mpa": 503,
+        "elongation_pct": 11,
+        "density_g_cm3": 2.81,
+        "heat_deflection_c": 150,
+        "cost_per_kg_usd": 15,
+        "machinability_rating": 7
+      },
+      "advantages": ["Very high strength", "Lightweight", "Good fatigue resistance"],
+      "disadvantages": ["Poor corrosion resistance", "More expensive", "Harder to machine"],
+      "typical_uses": ["Aerospace structural", "High-stress components", "Tooling"]
+    },
+    {
+      "id": "steel-1018",
+      "name": "Steel 1018 (Mild Steel)",
+      "category": "metal",
+      "processes": ["CNC"],
+      "properties": {
+        "tensile_strength_mpa": 440,
+        "yield_strength_mpa": 370,
+        "elongation_pct": 15,
+        "density_g_cm3": 7.87,
+        "heat_deflection_c": 400,
+        "cost_per_kg_usd": 3,
+        "machinability_rating": 7
+      },
+      "advantages": ["Very affordable", "Weldable", "Good machinability", "High strength"],
+      "disadvantages": ["Heavy", "Rusts without coating", "Harder to machine than aluminum"],
+      "typical_uses": ["Structural parts", "Shafts", "Fixtures", "General purpose"]
+    },
+    {
+      "id": "stainless-304",
+      "name": "Stainless Steel 304",
+      "category": "metal",
+      "processes": ["CNC"],
+      "properties": {
+        "tensile_strength_mpa": 515,
+        "yield_strength_mpa": 205,
+        "elongation_pct": 40,
+        "density_g_cm3": 8.00,
+        "heat_deflection_c": 450,
+        "cost_per_kg_usd": 10,
+        "machinability_rating": 4
+      },
+      "advantages": ["Excellent corrosion resistance", "Food safe", "High temp capable", "Durable"],
+      "disadvantages": ["Difficult to machine (work hardens)", "Expensive", "Heavy"],
+      "typical_uses": ["Food equipment", "Medical devices", "Chemical containers"]
+    },
+    {
+      "id": "brass-360",
+      "name": "Brass 360 (Free Machining)",
+      "category": "metal",
+      "processes": ["CNC"],
+      "properties": {
+        "tensile_strength_mpa": 385,
+        "yield_strength_mpa": 138,
+        "elongation_pct": 25,
+        "density_g_cm3": 8.50,
+        "heat_deflection_c": 200,
+        "cost_per_kg_usd": 12,
+        "machinability_rating": 10
+      },
+      "advantages": ["Best machinability of any metal", "Corrosion resistant", "Attractive finish"],
+      "disadvantages": ["Heavy", "Expensive", "Softer than steel"],
+      "typical_uses": ["Fittings", "Valves", "Electrical connectors", "Decorative parts"]
+    },
+    {
+      "id": "delrin",
+      "name": "Delrin (POM/Acetal)",
+      "category": "engineering_plastic",
+      "processes": ["CNC", "Injection Molding"],
+      "properties": {
+        "tensile_strength_mpa": 70,
+        "yield_strength_mpa": 65,
+        "elongation_pct": 25,
+        "density_g_cm3": 1.41,
+        "heat_deflection_c": 100,
+        "cost_per_kg_usd": 8,
+        "machinability_rating": 9
+      },
+      "advantages": ["Excellent machinability", "Low friction", "High stiffness", "Chemical resistant"],
+      "disadvantages": ["Poor adhesion (hard to glue/paint)", "Flammable"],
+      "typical_uses": ["Gears", "Bushings", "Conveyor parts", "Food processing equipment"]
+    },
+    {
+      "id": "hdpe",
+      "name": "HDPE",
+      "category": "thermoplastic",
+      "processes": ["CNC", "Injection Molding"],
+      "properties": {
+        "tensile_strength_mpa": 32,
+        "yield_strength_mpa": 26,
+        "elongation_pct": 500,
+        "density_g_cm3": 0.95,
+        "heat_deflection_c": 60,
+        "cost_per_kg_usd": 4,
+        "machinability_rating": 7
+      },
+      "advantages": ["Very cheap", "Chemical resistant", "Food safe", "Impact resistant"],
+      "disadvantages": ["Low strength", "Hard to glue", "Creeps under load"],
+      "typical_uses": ["Containers", "Cutting boards", "Chemical tanks", "Piping"]
+    },
+    {
+      "id": "nylon-66-cnc",
+      "name": "Nylon 6/6 (Cast)",
+      "category": "engineering_plastic",
+      "processes": ["CNC"],
+      "properties": {
+        "tensile_strength_mpa": 85,
+        "yield_strength_mpa": 70,
+        "elongation_pct": 60,
+        "density_g_cm3": 1.14,
+        "heat_deflection_c": 90,
+        "cost_per_kg_usd": 12,
+        "machinability_rating": 7
+      },
+      "advantages": ["High strength", "Wear resistant", "Self-lubricating", "Good fatigue life"],
+      "disadvantages": ["Absorbs moisture (dimensional change)", "Requires dry machining"],
+      "typical_uses": ["Wear pads", "Rollers", "Structural components", "Sprockets"]
+    },
+    {
+      "id": "pp",
+      "name": "Polypropylene (PP)",
+      "category": "thermoplastic",
+      "processes": ["Injection Molding"],
+      "properties": {
+        "tensile_strength_mpa": 35,
+        "yield_strength_mpa": 30,
+        "elongation_pct": 200,
+        "density_g_cm3": 0.90,
+        "heat_deflection_c": 60,
+        "cost_per_kg_usd": 3,
+        "machinability_rating": 6
+      },
+      "advantages": ["Very cheap", "Chemical resistant", "Living hinge capable", "Food safe"],
+      "disadvantages": ["Low strength", "Hard to bond/paint", "UV degradation"],
+      "typical_uses": ["Packaging", "Living hinges", "Containers", "Automotive interior"]
+    },
+    {
+      "id": "pe",
+      "name": "Polyethylene (PE)",
+      "category": "thermoplastic",
+      "processes": ["Injection Molding"],
+      "properties": {
+        "tensile_strength_mpa": 25,
+        "yield_strength_mpa": 15,
+        "elongation_pct": 600,
+        "density_g_cm3": 0.94,
+        "heat_deflection_c": 50,
+        "cost_per_kg_usd": 3,
+        "machinability_rating": 5
+      },
+      "advantages": ["Extremely cheap", "Chemical resistant", "Flexible", "Impact resistant"],
+      "disadvantages": ["Very low strength", "Hard to bond", "Not rigid"],
+      "typical_uses": ["Bottles", "Bags", "Toys", "Packaging"]
+    }
+  ]
+}
