@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadly v2 - DFM Analysis</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-title">
+                <h1>CADLY</h1>
+                <span class="subtitle">DFM Analysis Agent v2</span>
+            </div>
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">Checking...</span>
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tabs">
+            <button class="tab active" data-tab="analysis" onclick="switchTab('analysis')">Analysis</button>
+            <button class="tab" data-tab="costs" onclick="switchTab('costs')">Costs</button>
+            <button class="tab" data-tab="simulator" onclick="switchTab('simulator')">Simulator</button>
+            <button class="tab" data-tab="recommend" onclick="switchTab('recommend')">Recommend</button>
+            <button class="tab" data-tab="review" onclick="switchTab('review')">AI Review</button>
+            <button class="tab" data-tab="sustainability" onclick="switchTab('sustainability')">Sustainability</button>
+        </nav>
+
+        <!-- WebSocket Status Bar -->
+        <div class="ws-status" id="wsStatus" style="display: none;">
+            <div class="spinner-small"></div>
+            <span id="wsStatusText">Working...</span>
+        </div>
+
+        <!-- ====== TAB: Analysis ====== -->
+        <div class="tab-content active" id="tab-analysis">
+            <!-- Controls -->
+            <div class="controls">
+                <button class="btn btn-primary" id="analyzeBtn" onclick="runAnalysis()">
+                    Analyze Part
+                </button>
+                <select id="processFilter">
+                    <option value="all">All Processes</option>
+                    <option value="fdm">FDM Only</option>
+                    <option value="sla">SLA Only</option>
+                    <option value="cnc">CNC Only</option>
+                    <option value="injection_molding">Injection Molding</option>
+                </select>
+            </div>
+
+            <!-- Summary -->
+            <div id="summary" style="display: none;">
+                <div class="summary-card" id="summaryCard">
+                    <div class="summary-header">
+                        <span class="part-name" id="partName">-</span>
+                        <span class="badge" id="processRecommendation">-</span>
+                    </div>
+                    <div class="summary-stats">
+                        <div class="stat">
+                            <span class="stat-value" id="totalViolations">0</span>
+                            <span class="stat-label">Issues</span>
+                        </div>
+                        <div class="stat stat-critical">
+                            <span class="stat-value" id="criticalCount">0</span>
+                            <span class="stat-label">Critical</span>
+                        </div>
+                        <div class="stat stat-warning">
+                            <span class="stat-value" id="warningCount">0</span>
+                            <span class="stat-label">Warning</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Violations List -->
+            <div class="section" id="violationsSection" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">Violations</h2>
+                    <button class="btn-fix-all" id="fixAllBtn" onclick="fixAll()" style="display:none;">Fix All</button>
+                </div>
+                <div class="violations-list" id="violationsList"></div>
+            </div>
+
+            <!-- Quick Cost Table -->
+            <div class="section" id="costSection" style="display: none;">
+                <h2 class="section-title">Cost Estimate</h2>
+                <div class="cost-table" id="costTable"></div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState">
+                <div class="empty-icon">&#9881;</div>
+                <p>Open a part in Fusion 360 and click <strong>Analyze Part</strong> to check for manufacturing issues.</p>
+            </div>
+        </div>
+
+        <!-- ====== TAB: Costs ====== -->
+        <div class="tab-content" id="tab-costs">
+            <div class="placeholder-tab">
+                <h3>Cost Comparison Dashboard</h3>
+                <p>Analyze a part first to see interactive cost curves.</p>
+                <div id="costDashboard" style="display: none;">
+                    <div class="controls">
+                        <label>Quantity:
+                            <input type="range" id="quantitySlider" min="1" max="10000" value="1" step="1" oninput="updateQuantityLabel(this.value)">
+                            <span id="quantityLabel">1</span>
+                        </label>
+                    </div>
+                    <div id="costCurvesContainer"></div>
+                    <div id="crossoverList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== TAB: Simulator ====== -->
+        <div class="tab-content" id="tab-simulator">
+            <div class="placeholder-tab">
+                <h3>Process Switch Simulator</h3>
+                <p>Coming in Phase 6. Switch between CNC / FDM / SLA and see how violations and costs change.</p>
+            </div>
+        </div>
+
+        <!-- ====== TAB: Recommend ====== -->
+        <div class="tab-content" id="tab-recommend">
+            <div class="placeholder-tab">
+                <h3>Machine & Material Recommendations</h3>
+                <p>Coming in Phase 7. Get ranked machine and material recommendations based on your part.</p>
+            </div>
+        </div>
+
+        <!-- ====== TAB: AI Review ====== -->
+        <div class="tab-content" id="tab-review">
+            <div class="placeholder-tab">
+                <h3>AI Design Review Board</h3>
+                <p>Coming in Phase 9. Four specialist AI agents review your part and produce a unified report.</p>
+            </div>
+        </div>
+
+        <!-- ====== TAB: Sustainability ====== -->
+        <div class="tab-content" id="tab-sustainability">
+            <div class="placeholder-tab" id="sustainabilityPlaceholder">
+                <h3>Sustainability Report</h3>
+                <p>Analyze a part first to see environmental impact data.</p>
+            </div>
+            <div id="sustainabilityDashboard" style="display: none;">
+                <div id="greenScoreHero"></div>
+                <div class="section">
+                    <h2 class="section-title">Material Waste Comparison</h2>
+                    <div id="wasteBars"></div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">Carbon Footprint</h2>
+                    <div id="carbonBars"></div>
+                </div>
+                <div id="greenRecommendation"></div>
+                <div id="savingsTips"></div>
+
+                <!-- AI-Enriched Sustainability (appears when Dedalus results arrive) -->
+                <div id="aiSustainabilitySection" style="display: none;">
+                    <div class="ai-loading-bar" id="aiSustainabilityLoading">
+                        <div class="spinner-small"></div>
+                        <span>AI agents analyzing sustainability...</span>
+                    </div>
+                    <div id="aiGreenScores"></div>
+                    <div id="aiRecommendation"></div>
+                    <div id="aiRoadmap"></div>
+                    <div id="aiTradeOffs"></div>
+                    <div id="agentReasoning"></div>
+                    <div id="dedalusBadge"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/utils/api.js"></script>
+    <script src="/static/components/violations.js"></script>
+    <script src="/static/components/sustainability.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>
