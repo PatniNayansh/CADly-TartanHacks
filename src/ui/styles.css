@@ -108,8 +108,9 @@ body {
 .tab:hover { color: var(--text-primary); background: var(--bg-hover); }
 .tab.active { background: var(--accent); color: white; }
 
-.tab-content { display: none; }
+.tab-content { display: none; animation: fadeIn 0.2s ease-in; }
 .tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
 /* WebSocket status bar */
 .ws-status {
@@ -337,6 +338,15 @@ select {
 
 .btn-fix:hover { background: var(--accent-hover); }
 .btn-fix:disabled { background: var(--bg-card); color: var(--text-secondary); cursor: not-allowed; }
+.btn-fix.fixing {
+    background: var(--warning);
+    color: #1e1e1e;
+    pointer-events: none;
+}
+.btn-fix.fixed {
+    background: var(--success);
+    pointer-events: none;
+}
 
 /* Cost Table */
 .cost-table {
@@ -1164,4 +1174,66 @@ select {
     color: var(--text-secondary);
     text-transform: uppercase;
     margin-top: 2px;
+}
+
+/* App Footer */
+.app-footer {
+    text-align: center;
+    padding: 16px 0 8px;
+    margin-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+/* Loading overlay for analyze button */
+.btn-primary.loading {
+    position: relative;
+    color: transparent;
+    pointer-events: none;
+}
+.btn-primary.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin: -8px 0 0 -8px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+/* Violation card entrance animation */
+.violation-card {
+    animation: slideIn 0.15s ease-out;
+}
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Toast improvements */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 1000;
+    animation: toastIn 0.3s ease-out;
+    max-width: 400px;
+    text-align: center;
+}
+.toast.success { background: var(--success); color: white; }
+.toast.error { background: var(--critical); color: white; }
+@keyframes toastIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }

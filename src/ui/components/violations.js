@@ -145,6 +145,7 @@ async function applyFix(ruleId, featureId, targetValue, currentValue) {
     const btn = event.target;
     const originalText = btn.textContent;
     btn.textContent = 'Fixing...';
+    btn.className = 'btn-fix fixing';
     btn.disabled = true;
 
     try {
@@ -156,16 +157,27 @@ async function applyFix(ruleId, featureId, targetValue, currentValue) {
         });
 
         if (data.success) {
+            btn.textContent = 'Fixed!';
+            btn.className = 'btn-fix fixed';
             showToast(data.data?.message || 'Fix applied!', 'success');
+            // Fade out the violation card
+            const card = btn.closest('.violation-card');
+            if (card) {
+                card.style.transition = 'opacity 0.5s, transform 0.5s';
+                card.style.opacity = '0.4';
+                card.style.transform = 'translateX(10px)';
+            }
             setTimeout(runAnalysis, 1500);
         } else {
             showToast(data.error?.message || 'Fix failed', 'error');
             btn.textContent = originalText;
+            btn.className = 'btn-fix';
             btn.disabled = false;
         }
     } catch (err) {
         showToast(`Fix error: ${err.message}`, 'error');
         btn.textContent = originalText;
+        btn.className = 'btn-fix';
         btn.disabled = false;
     }
 }

@@ -66,6 +66,7 @@ async function runAnalysis() {
 
     btn.disabled = true;
     btn.textContent = 'Analyzing...';
+    btn.classList.add('loading');
     emptyState.style.display = 'none';
 
     try {
@@ -104,6 +105,7 @@ async function runAnalysis() {
     } finally {
         btn.disabled = false;
         btn.textContent = 'Analyze Part';
+        btn.classList.remove('loading');
     }
 }
 
