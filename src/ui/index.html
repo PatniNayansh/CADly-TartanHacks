@@ -145,10 +145,20 @@
 
         <!-- ====== TAB: Recommend ====== -->
         <div class="tab-content" id="tab-recommend">
-            <div class="placeholder-tab">
-                <h3>Machine & Material Recommendations</h3>
-                <p>Coming in Phase 7. Get ranked machine and material recommendations based on your part.</p>
+            <div class="controls">
+                <select id="recProcess" onchange="loadRecommendations()">
+                    <option value="fdm">FDM</option>
+                    <option value="sla">SLA</option>
+                    <option value="cnc">CNC</option>
+                    <option value="injection_molding">Injection Molding</option>
+                </select>
+                <button class="btn btn-primary" id="recBtn" onclick="loadRecommendations()">Get Recommendations</button>
             </div>
+            <div id="recPlaceholder" class="placeholder-tab">
+                <h3>Machine & Material Recommendations</h3>
+                <p>Select a process and click <strong>Get Recommendations</strong> to see ranked machines and materials for your part.</p>
+            </div>
+            <div id="recResults"></div>
         </div>
 
         <!-- ====== TAB: AI Review ====== -->
@@ -222,6 +232,7 @@
     <script src="/static/components/decision_summary.js"></script>
     <script src="/static/components/review.js"></script>
     <script src="/static/components/simulator.js"></script>
+    <script src="/static/components/recommend.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>

@@ -330,18 +330,70 @@ async def simulate(request: Request):
         await client.close()
 
 
-# ---- Recommendation Endpoints (placeholder — Phase 7) ----
+# ---- Machine + Material Recommendation ----
 
 @router.get("/machines")
-async def machines():
-    """Get machine recommendations. (Phase 7)"""
-    return error_response("NOT_IMPLEMENTED", "Machine recommendations coming in Phase 7", 501)
+async def machines(request: Request):
+    """Get machine recommendations for the current part."""
+    process = request.query_params.get("process", "fdm").strip().lower()
+
+    client = _get_client()
+    try:
+        from src.fusion.geometry import GeometryHelper
+        from src.recommend.machine_matcher import MachineMatcher
+
+        geo = GeometryHelper(client)
+        bodies = await geo.get_bodies()
+
+        bounding_box = None
+        volume_cm3 = 0
+        if bodies:
+            body = bodies[0]
+            bounding_box = body.bounding_box
+            volume_cm3 = body.volume_cm3
+
+        matcher = MachineMatcher()
+        results = matcher.match(
+            process=process,
+            bounding_box=bounding_box,
+            volume_cm3=volume_cm3,
+        )
+
+        return success_response({
+            "process": process,
+            "machines": results,
+            "count": len(results),
+        })
+
+    except FusionError as e:
+        return error_response("FUSION_ERROR", str(e))
+    except Exception as e:
+        logger.error(f"Machine recommendation failed: {e}")
+        return error_response("RECOMMEND_FAILED", str(e))
+    finally:
+        await client.close()
 
 
 @router.get("/materials")
-async def materials():
-    """Get material recommendations. (Phase 7)"""
-    return error_response("NOT_IMPLEMENTED", "Material recommendations coming in Phase 7", 501)
+async def materials(request: Request):
+    """Get material recommendations for the current part."""
+    process = request.query_params.get("process", "fdm").strip().lower()
+
+    try:
+        from src.recommend.material_matcher import MaterialMatcher
+
+        matcher = MaterialMatcher()
+        results = matcher.match(process=process)
+
+        return success_response({
+            "process": process,
+            "materials": results,
+            "count": len(results),
+        })
+
+    except Exception as e:
+        logger.error(f"Material recommendation failed: {e}")
+        return error_response("RECOMMEND_FAILED", str(e))
 
 
 # ---- AI Design Review ----
