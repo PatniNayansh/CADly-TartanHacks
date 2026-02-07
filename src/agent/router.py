@@ -107,6 +107,109 @@ def pick_model_for_task(task: str) -> str:
         return "anthropic/claude-sonnet-4-5-20250929"
 
 
+def get_strategy_models(strategy: str, extraction_model: str = None, reasoning_model: str = None) -> dict:
+    """Get models for each phase based on strategy mode.
+
+    Args:
+        strategy: Strategy mode ("auto", "budget", "quality", "custom")
+        extraction_model: Custom model for extraction phase (only for "custom" mode)
+        reasoning_model: Custom model for reasoning phase (only for "custom" mode)
+
+    Returns:
+        Dictionary with extraction_model and reasoning_model
+    """
+    if strategy == "auto":
+        # Smart handoff: Fast for extraction, powerful for reasoning
+        return {
+            "extraction_model": "google/gemini-2.0-flash-exp",
+            "reasoning_model": "anthropic/claude-sonnet-4-5-20250929",
+            "reason": "Optimal cost/quality balance"
+        }
+    elif strategy == "budget":
+        # All Gemini Flash: cheapest option
+        return {
+            "extraction_model": "google/gemini-2.0-flash-exp",
+            "reasoning_model": "google/gemini-2.0-flash-exp",
+            "reason": "Minimum cost"
+        }
+    elif strategy == "quality":
+        # All Claude Sonnet: highest quality
+        return {
+            "extraction_model": "anthropic/claude-sonnet-4-5-20250929",
+            "reasoning_model": "anthropic/claude-sonnet-4-5-20250929",
+            "reason": "Maximum quality"
+        }
+    elif strategy == "custom":
+        # User-specified models
+        return {
+            "extraction_model": extraction_model or "google/gemini-2.0-flash-exp",
+            "reasoning_model": reasoning_model or "anthropic/claude-sonnet-4-5-20250929",
+            "reason": "User-defined"
+        }
+    else:
+        # Default to auto
+        return get_strategy_models("auto")
+
+
+def estimate_phase_cost(model_id: str, tokens_estimated: int = 1000) -> float:
+    """Estimate cost for a phase based on model and token count.
+
+    Args:
+        model_id: Model identifier
+        tokens_estimated: Estimated tokens for this phase
+
+    Returns:
+        Estimated cost in USD
+    """
+    # Rough cost estimates per 1M tokens (as of 2026)
+    costs_per_million = {
+        "google/gemini-2.0-flash-exp": 0.10,                    # Very cheap
+        "anthropic/claude-haiku-4-5-20251001": 0.40,           # Fast & cheap
+        "anthropic/claude-sonnet-4-5-20250929": 3.00,          # Balanced
+        "claude-opus-4-5-20251101": 15.00,                     # Most powerful
+        "anthropic/claude-opus-4-6": 15.00,                    # Legacy Opus
+    }
+
+    cost_per_million = costs_per_million.get(model_id, 1.0)
+    return (tokens_estimated / 1_000_000) * cost_per_million
+
+
+def estimate_total_cost(extraction_model: str, reasoning_model: str) -> dict:
+    """Estimate total cost for full analysis.
+
+    Args:
+        extraction_model: Model for extraction phase
+        reasoning_model: Model for reasoning phase
+
+    Returns:
+        Dictionary with cost breakdown
+    """
+    # Estimate token usage per phase
+    extraction_tokens = 2000  # Geometry + machine text parsing
+    reasoning_tokens = 5000   # Full DFM analysis + synthesis
+
+    extraction_cost = estimate_phase_cost(extraction_model, extraction_tokens)
+    reasoning_cost = estimate_phase_cost(reasoning_model, reasoning_tokens)
+
+    return {
+        "extraction_cost": extraction_cost,
+        "reasoning_cost": reasoning_cost,
+        "total_cost": extraction_cost + reasoning_cost,
+        "breakdown": {
+            "extraction": {
+                "model": extraction_model,
+                "tokens": extraction_tokens,
+                "cost": extraction_cost
+            },
+            "reasoning": {
+                "model": reasoning_model,
+                "tokens": reasoning_tokens,
+                "cost": reasoning_cost
+            }
+        }
+    }
+
+
 def get_model_info(model_id: str) -> dict:
     """Get metadata about a model for display/logging.
 
@@ -124,12 +227,26 @@ def get_model_info(model_id: str) -> dict:
             "cost": "low",
             "best_for": "Simple extraction, structured output, quick analysis"
         },
+        "anthropic/claude-haiku-4-5-20251001": {
+            "name": "Claude Haiku 4.5",
+            "provider": "Anthropic",
+            "speed": "very fast",
+            "cost": "low",
+            "best_for": "Fast extraction, simple reasoning, quick analysis"
+        },
         "anthropic/claude-sonnet-4-5-20250929": {
             "name": "Claude Sonnet 4.5",
             "provider": "Anthropic",
             "speed": "moderate",
             "cost": "moderate",
             "best_for": "Complex reasoning, synthesis, detailed analysis"
+        },
+        "claude-opus-4-5-20251101": {
+            "name": "Claude Opus 4.5",
+            "provider": "Anthropic",
+            "speed": "slower",
+            "cost": "high",
+            "best_for": "Most complex reasoning, highest quality analysis"
         }
     }
 

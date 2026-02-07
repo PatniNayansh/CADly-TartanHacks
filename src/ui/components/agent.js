@@ -78,10 +78,12 @@ const extractionCost = document.getElementById('extractionCost');
 const reasoningCost = document.getElementById('reasoningCost');
 const totalCost = document.getElementById('totalCost');
 
-// Cost per 1M tokens (approximate)
+// Cost per 1M tokens (approximate as of 2026)
 const MODEL_COSTS = {
-    'google/gemini-2.0-flash-exp': 0.10,
-    'anthropic/claude-sonnet-4-5-20250929': 3.00
+    'google/gemini-2.0-flash-exp': 0.10,           // Cheapest
+    'anthropic/claude-haiku-4-5-20251001': 0.40,   // Fast & cheap
+    'anthropic/claude-sonnet-4-5-20250929': 3.00,  // Balanced
+    'claude-opus-4-5-20251101': 15.00              // Most powerful
 };
 
 // Estimated token usage per phase
@@ -335,22 +337,100 @@ function addFinding(event) {
 function displayFinalReport(report) {
     console.log('Final report received:', report);
 
-    // Hide agent progress
+    // Hide agent progress after delay
     setTimeout(() => {
         agentProgress.classList.add('hidden');
     }, 2000);
 
-    // Extract data
-    const findingsCount = report.findings?.length || 0;
-    const isManufacturable = report.is_manufacturable ? 'Yes' : 'No';
-    const recommendedProcess = report.recommended_process?.toUpperCase() || 'Unknown';
+    // === POPULATE SUMMARY CARD ===
+    const summary = document.getElementById('summary');
+    const partName = document.getElementById('partName');
+    const processRec = document.getElementById('processRecommendation');
+    const totalViolations = document.getElementById('totalViolations');
+    const criticalCount = document.getElementById('criticalCount');
+    const warningCount = document.getElementById('warningCount');
 
-    // Build message
+    const findingsCount = report.findings?.length || 0;
+    const critical = report.blocking_issues?.length || 0;
+    const warnings = report.warnings?.length || 0;
+
+    partName.textContent = report.part_name || 'Analysis Complete';
+    processRec.textContent = report.recommended_process?.toUpperCase() || 'Unknown';
+    processRec.className = `badge ${report.is_manufacturable ? 'success' : 'warning'}`;
+    totalViolations.textContent = findingsCount;
+    criticalCount.textContent = critical;
+    warningCount.textContent = warnings;
+    summary.style.display = 'block';
+
+    // === POPULATE VIOLATIONS LIST ===
+    const violationsSection = document.getElementById('violationsSection');
+    const violationsList = document.getElementById('violationsList');
+
+    if (findingsCount > 0) {
+        violationsList.innerHTML = '';
+        report.findings.forEach(finding => {
+            const card = document.createElement('div');
+            card.className = `violation-card severity-${finding.severity}`;
+            card.innerHTML = `
+                <div class="violation-header">
+                    <span class="rule-id">${finding.rule_id}</span>
+                    <span class="severity-badge ${finding.severity}">${finding.severity.toUpperCase()}</span>
+                </div>
+                <p class="violation-message">${finding.message}</p>
+                <div class="violation-details">
+                    <span>Current: ${finding.current_value}</span>
+                    <span>Required: ${finding.required_value}</span>
+                    <span>Process: ${finding.process.toUpperCase()}</span>
+                </div>
+            `;
+            violationsList.appendChild(card);
+        });
+        violationsSection.style.display = 'block';
+    } else {
+        violationsSection.style.display = 'none';
+    }
+
+    // === POPULATE COST TABLE ===
+    const costSection = document.getElementById('costSection');
+    const costTable = document.getElementById('costTable');
+
+    if (report.cost_estimates && report.cost_estimates.length > 0) {
+        costTable.innerHTML = `
+            <table class="cost-comparison-table">
+                <thead>
+                    <tr>
+                        <th>Process</th>
+                        <th>Material</th>
+                        <th>Machine Time</th>
+                        <th>Setup</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${report.cost_estimates.map(cost => `
+                        <tr>
+                            <td>${cost.process.toUpperCase()}</td>
+                            <td>$${cost.material_cost.toFixed(2)}</td>
+                            <td>$${cost.machine_time_cost.toFixed(2)}</td>
+                            <td>$${cost.setup_cost.toFixed(2)}</td>
+                            <td><strong>$${cost.total.toFixed(2)}</strong></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        costSection.style.display = 'block';
+    }
+
+    // Hide empty state
+    document.getElementById('emptyState').style.display = 'none';
+
+    // === SHOW SUCCESS NOTIFICATION ===
     let message = `Analysis complete!
 
 Findings: ${findingsCount}
-Manufacturable: ${isManufacturable}
-Recommended Process: ${recommendedProcess}`;
+Manufacturable: ${report.is_manufacturable ? 'Yes' : 'No'}
+Recommended Process: ${report.recommended_process?.toUpperCase() || 'Unknown'}`;
 
     // Add cost savings if available
     if (report.cost_analysis) {
@@ -362,18 +442,15 @@ Total Cost: $${costAnalysis.total_cost.toFixed(4)}`;
 
         if (costAnalysis.savings > 0) {
             message += `
-Savings vs All-Sonnet: $${costAnalysis.savings.toFixed(4)} (${costAnalysis.savings_percent.toFixed(1)}%)`;
+Savings: $${costAnalysis.savings.toFixed(4)} (${costAnalysis.savings_percent.toFixed(1)}%)`;
         }
     }
 
     message += `
 
-See full report in console.`;
+Results displayed below!`;
 
     alert(message);
-
-    // Could also populate existing tabs with report data here
-    // For now, log to console for debugging
 }
 
 console.log('Agent UI loaded');

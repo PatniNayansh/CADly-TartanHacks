@@ -64,6 +64,44 @@
                     ></textarea>
                 </div>
 
+                <!-- Model Strategy Selection -->
+                <div class="form-group">
+                    <label for="strategySelect">⚡ Model Strategy (Multi-Model Handoffs):</label>
+                    <select id="strategySelect" class="form-select-large">
+                        <option value="auto">🎯 Auto (Recommended) - Smart handoffs for optimal cost/quality</option>
+                        <option value="budget">💰 Budget - All Gemini Flash (cheapest)</option>
+                        <option value="quality">🏆 Quality - All Claude Sonnet (highest quality)</option>
+                        <option value="custom">⚙️ Custom - Choose models per phase</option>
+                    </select>
+                </div>
+
+                <!-- Custom Model Selection (hidden by default) -->
+                <div id="customModels" class="custom-models hidden">
+                    <div class="model-phase">
+                        <label>Phase 1: Extraction (geometry + machine parsing)</label>
+                        <select id="extractionModelSelect" class="form-select">
+                            <option value="google/gemini-2.0-flash-exp">Gemini 2.0 Flash (fast, cheap)</option>
+                            <option value="anthropic/claude-haiku-4-5-20251001">Claude Haiku 4.5 (fast, cheap)</option>
+                            <option value="anthropic/claude-sonnet-4-5-20250929">Claude Sonnet 4.5 (balanced)</option>
+                            <option value="claude-opus-4-5-20251101">Claude Opus 4.5 (most powerful)</option>
+                        </select>
+                        <span class="cost-estimate" id="extractionCost">~$0.0002</span>
+                    </div>
+                    <div class="model-phase">
+                        <label>Phase 2: Reasoning (DFM analysis + synthesis)</label>
+                        <select id="reasoningModelSelect" class="form-select">
+                            <option value="google/gemini-2.0-flash-exp">Gemini 2.0 Flash (fast, cheap)</option>
+                            <option value="anthropic/claude-haiku-4-5-20251001">Claude Haiku 4.5 (fast, cheap)</option>
+                            <option value="anthropic/claude-sonnet-4-5-20250929" selected>Claude Sonnet 4.5 (balanced)</option>
+                            <option value="claude-opus-4-5-20251101">Claude Opus 4.5 (most powerful)</option>
+                        </select>
+                        <span class="cost-estimate" id="reasoningCost">~$0.0150</span>
+                    </div>
+                    <div class="total-cost">
+                        <strong>Estimated Total Cost:</strong> <span id="totalCost">$0.0152</span>
+                    </div>
+                </div>
+
                 <!-- Options Row -->
                 <div class="options-row">
                     <label class="checkbox-label">
