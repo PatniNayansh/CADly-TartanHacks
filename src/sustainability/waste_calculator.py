@@ -14,6 +14,16 @@ FDM_FAIL_RATE = 0.08        # 8% average failed print waste
 SLA_SUPPORT_FACTOR = 0.15   # 15% supports + vat residue
 IM_RUNNER_FACTOR = 0.05     # 5% runner/sprue waste
 
+# Relatable weight comparisons (grams, description)
+WASTE_EQUIVALENCIES = [
+    (5, "a sheet of paper"),
+    (28, "an AA battery"),
+    (50, "a golf ball"),
+    (100, "a deck of cards"),
+    (340, "a soda can"),
+    (450, "a loaf of bread"),
+]
+
 
 class WasteCalculator:
     """Estimates material waste for each manufacturing process."""
@@ -45,6 +55,8 @@ class WasteCalculator:
             breakdown={
                 "supports": round(support_waste * DENSITY_PLA, 2),
                 "failed_prints": round(fail_waste * DENSITY_PLA, 2),
+                "material": "PLA plastic",
+                "waste_equivalency": self._waste_equivalency(total_waste * DENSITY_PLA),
             },
         )
 
@@ -62,6 +74,8 @@ class WasteCalculator:
             waste_grams=support_waste * DENSITY_RESIN,
             breakdown={
                 "supports_and_residue": round(support_waste * DENSITY_RESIN, 2),
+                "material": "Photopolymer resin",
+                "waste_equivalency": self._waste_equivalency(support_waste * DENSITY_RESIN),
             },
         )
 
@@ -82,6 +96,8 @@ class WasteCalculator:
             waste_grams=waste_vol * DENSITY_ALUMINUM,
             breakdown={
                 "machining_chips": round(waste_vol * DENSITY_ALUMINUM, 2),
+                "material": "Aluminum 6061",
+                "waste_equivalency": self._waste_equivalency(waste_vol * DENSITY_ALUMINUM),
             },
         )
 
@@ -99,8 +115,20 @@ class WasteCalculator:
             waste_grams=runner_waste * DENSITY_ABS,
             breakdown={
                 "runner_sprue": round(runner_waste * DENSITY_ABS, 2),
+                "material": "ABS plastic",
+                "waste_equivalency": self._waste_equivalency(runner_waste * DENSITY_ABS),
             },
         )
+
+    @staticmethod
+    def _waste_equivalency(grams: float) -> str:
+        """Relatable weight comparison for waste amount."""
+        if grams < 0.5:
+            return ""
+        for threshold, desc in WASTE_EQUIVALENCIES:
+            if grams <= threshold * 1.5:
+                return f"~ the weight of {desc}"
+        return f"~ {grams / 340:.1f} soda cans"
 
     @staticmethod
     def _bounding_box_volume(bb: dict) -> float:

@@ -9,6 +9,7 @@ function renderSustainability(data) {
     dashboard.style.display = 'block';
 
     renderGreenScoreHero(data.green_scores, data.greenest_process);
+    renderProcessBreakdowns(data.green_scores, data.greenest_process);
     renderWasteBars(data.waste);
     renderCarbonBars(data.carbon);
     renderGreenRecommendation(data.recommendation, data.greenest_process);
@@ -58,6 +59,52 @@ function renderGreenScoreHero(scores, greenest) {
         </div>`;
 }
 
+function renderProcessBreakdowns(scores, greenest) {
+    const container = document.getElementById('wasteBars');
+    if (!container || !scores || !scores.length) return;
+
+    // Insert breakdown cards before the waste section
+    let breakdownDiv = document.getElementById('processBreakdowns');
+    if (!breakdownDiv) {
+        breakdownDiv = document.createElement('div');
+        breakdownDiv.id = 'processBreakdowns';
+        container.parentElement.insertBefore(breakdownDiv, container.parentElement.firstChild);
+    }
+
+    breakdownDiv.innerHTML = `
+        <h2 class="section-title">Process Scores</h2>
+        ${scores.map(s => {
+            const scoreColor = s.score >= 70 ? 'var(--success)' :
+                               s.score >= 40 ? 'var(--warning)' : 'var(--critical)';
+            const isBest = s.process === greenest;
+            return `
+                <div class="process-breakdown-card ${isBest ? 'best' : ''}">
+                    <div class="process-breakdown-header">
+                        <span class="process-breakdown-name">${isBest ? '&#127807; ' : ''}${s.process}</span>
+                        <span class="process-breakdown-score" style="color: ${scoreColor}">${s.score} <small>${s.grade}</small></span>
+                    </div>
+                    <div class="ai-sub-scores">
+                        <div class="sub-score">
+                            <span class="sub-label">Waste</span>
+                            <div class="sub-bar-track"><div class="sub-bar-fill" style="width: ${(s.waste_score / 40) * 100}%; background: var(--warning)"></div></div>
+                            <span class="sub-val">${s.waste_score}/40</span>
+                        </div>
+                        <div class="sub-score">
+                            <span class="sub-label">Carbon</span>
+                            <div class="sub-bar-track"><div class="sub-bar-fill" style="width: ${(s.carbon_score / 40) * 100}%; background: var(--accent)"></div></div>
+                            <span class="sub-val">${s.carbon_score}/40</span>
+                        </div>
+                        <div class="sub-score">
+                            <span class="sub-label">Recycle</span>
+                            <div class="sub-bar-track"><div class="sub-bar-fill" style="width: ${(s.recyclability_score / 20) * 100}%; background: var(--success)"></div></div>
+                            <span class="sub-val">${s.recyclability_score}/20</span>
+                        </div>
+                    </div>
+                    <div class="process-breakdown-explanation">${s.explanation}</div>
+                </div>`;
+        }).join('')}`;
+}
+
 function renderWasteBars(wasteData) {
     const container = document.getElementById('wasteBars');
     if (!container || !wasteData.length) return;
@@ -75,7 +122,8 @@ function renderWasteBars(wasteData) {
                     <div class="bar-fill" style="width: ${pct}%; background: ${barColor}"></div>
                 </div>
                 <span class="bar-value">${w.waste_percent.toFixed(1)}%</span>
-                <span class="bar-detail">${w.waste_grams.toFixed(1)}g</span>
+                <span class="bar-detail">${w.waste_grams.toFixed(1)}g ${w.breakdown && w.breakdown.material ? w.breakdown.material : ''}</span>
+                ${w.breakdown && w.breakdown.waste_equivalency ? `<div class="bar-equivalency">${w.breakdown.waste_equivalency}</div>` : ''}
             </div>`;
     }).join('');
 }
@@ -128,6 +176,7 @@ function renderSavingsTips(tips) {
                 <div class="tip-detail">
                     Save <strong>${Math.abs(t.waste_saved_grams).toFixed(1)}g</strong> waste
                     + <strong>${Math.abs(t.carbon_saved_kg).toFixed(3)} kg</strong> CO&#8322;
+                    ${t.carbon_equivalency ? `<div class="tip-equivalency">${t.carbon_equivalency}</div>` : ''}
                 </div>
             </div>
         `).join('')}`;

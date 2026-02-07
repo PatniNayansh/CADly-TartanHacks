@@ -2,6 +2,15 @@
 
 from src.models.sustainability import WasteEstimate, CarbonEstimate, GreenScore
 
+# Carbon equivalencies for relatable context (kg CO2, description)
+CARBON_EQUIVALENCIES = [
+    (0.008, "charging a smartphone"),
+    (0.036, "streaming video for 1 hour"),
+    (0.077, "boiling a kettle"),
+    (0.41, "driving 1 mile"),
+    (2.3, "a gallon of gasoline burned"),
+]
+
 # Recyclability points (0-20) per process default material
 RECYCLABILITY_SCORES = {
     "FDM": 15,              # PLA is compostable, moderately recyclable
@@ -104,6 +113,7 @@ class GreenScorer:
                 "to": greenest.process,
                 "waste_saved_grams": round(waste_saved, 1),
                 "carbon_saved_kg": round(carbon_saved, 3),
+                "carbon_equivalency": self._carbon_equivalency(abs(carbon_saved)),
                 "message": (
                     f"Switching from {s.process} to {greenest.process} "
                     f"saves {abs(waste_saved):.1f}g of waste "
@@ -111,6 +121,21 @@ class GreenScorer:
                 ),
             })
         return tips
+
+    @staticmethod
+    def _carbon_equivalency(carbon_kg: float) -> str:
+        """Convert carbon kg to a relatable everyday comparison."""
+        if carbon_kg < 0.001:
+            return ""
+        for threshold, desc in CARBON_EQUIVALENCIES:
+            if carbon_kg <= threshold * 2:
+                count = carbon_kg / threshold
+                if count < 0.1:
+                    continue
+                if count <= 1.2:
+                    return f"~ {desc}"
+                return f"~ {count:.1f}x {desc}"
+        return f"~ driving {carbon_kg / 0.41:.1f} miles"
 
     @staticmethod
     def _grade(score: int) -> str:

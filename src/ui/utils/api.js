@@ -81,7 +81,14 @@ function handleWsMessage(msg) {
         } else {
             console.warn('AI sustainability unavailable:', msg.data?.error);
             const section = document.getElementById('aiSustainabilitySection');
-            if (section) section.style.display = 'none';
+            if (section) {
+                section.innerHTML = `
+                    <div class="ai-unavailable">
+                        <span class="ai-unavailable-icon">&#129302;</span>
+                        <span>AI sustainability analysis unavailable. Formula-based scores shown above.</span>
+                    </div>`;
+                section.style.display = 'block';
+            }
         }
     }
 }

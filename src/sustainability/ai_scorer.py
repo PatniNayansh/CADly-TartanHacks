@@ -5,9 +5,7 @@ import json
 import logging
 from typing import Optional
 
-from dedalus_labs import AsyncDedalus, DedalusRunner
-
-from src.config import DEDALUS_MODEL
+from src.config import DEDALUS_API_KEY, DEDALUS_MODEL
 from src.models.sustainability import (
     WasteEstimate,
     CarbonEstimate,
@@ -18,19 +16,34 @@ from src.models.sustainability import (
 
 logger = logging.getLogger(__name__)
 
+# Lazy import — dedalus_labs may not be installed
+_dedalus_available = True
+try:
+    from dedalus_labs import AsyncDedalus, DedalusRunner
+except ImportError:
+    _dedalus_available = False
+    AsyncDedalus = None  # type: ignore
+    DedalusRunner = None  # type: ignore
+    logger.warning("dedalus_labs not installed — AI sustainability scoring unavailable")
+
 
 class AISustainabilityScorer:
     """Orchestrates a 3-agent Dedalus swarm for sustainability analysis."""
 
     def __init__(self):
-        self._client: Optional[AsyncDedalus] = None
-        self._runner: Optional[DedalusRunner] = None
+        self._client = None
+        self._runner = None
 
     def _ensure_client(self):
-        """Lazy-init the Dedalus client."""
-        if self._client is None:
-            self._client = AsyncDedalus()
-            self._runner = DedalusRunner(self._client)
+        """Lazy-init the Dedalus client. Raises RuntimeError if unavailable."""
+        if self._client is not None:
+            return
+        if not _dedalus_available:
+            raise RuntimeError("dedalus_labs package not installed")
+        if not DEDALUS_API_KEY:
+            raise RuntimeError("DEDALUS_API_KEY not configured — AI scoring unavailable")
+        self._client = AsyncDedalus()
+        self._runner = DedalusRunner(self._client)
 
     async def score(
         self,
