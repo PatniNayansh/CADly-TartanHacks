@@ -274,12 +274,60 @@ async def _run_ai_sustainability(builder, volume_cm3: float, bounding_box: dict 
         await manager.send_result("ai_sustainability", {"error": str(e)})
 
 
-# ---- Simulator Endpoint (placeholder — Phase 6) ----
+# ---- Process Switch Simulator ----
 
 @router.post("/simulate")
 async def simulate(request: Request):
-    """Simulate switching manufacturing process. (Phase 6)"""
-    return error_response("NOT_IMPLEMENTED", "Simulator coming in Phase 6", 501)
+    """Simulate switching from one manufacturing process to another.
+
+    Request body: { "from_process": "cnc", "to_process": "fdm" }
+    Returns: violations diff, cost delta, redesign steps, comparison data.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return error_response("BAD_REQUEST", "Invalid request body", 400)
+
+    from_process = body.get("from_process", "").strip().lower()
+    to_process = body.get("to_process", "").strip().lower()
+
+    valid_processes = {"fdm", "sla", "cnc", "injection_molding"}
+    if from_process not in valid_processes or to_process not in valid_processes:
+        return error_response(
+            "BAD_REQUEST",
+            f"Invalid process. Must be one of: {', '.join(sorted(valid_processes))}",
+            400,
+        )
+    if from_process == to_process:
+        return error_response("BAD_REQUEST", "From and to processes must be different", 400)
+
+    client = _get_client()
+    try:
+        from src.simulator.process_switch import ProcessSwitcher
+        from src.simulator.comparison import build_comparison
+
+        await manager.send_status(f"Simulating switch: {from_process.upper()} \u2192 {to_process.upper()}...", 0.1)
+
+        switcher = ProcessSwitcher(client)
+        result = await switcher.simulate(from_process, to_process)
+        result_dict = result.to_dict()
+
+        comparison = build_comparison(from_process, to_process, result_dict)
+
+        await manager.send_status("Simulation complete!", 1.0)
+
+        return success_response({
+            **result_dict,
+            "comparison": comparison,
+        })
+
+    except FusionError as e:
+        return error_response("FUSION_ERROR", str(e))
+    except Exception as e:
+        logger.error(f"Simulation failed: {e}")
+        return error_response("SIMULATE_FAILED", str(e))
+    finally:
+        await client.close()
 
 
 # ---- Recommendation Endpoints (placeholder — Phase 7) ----

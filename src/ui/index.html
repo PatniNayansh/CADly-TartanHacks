@@ -121,10 +121,26 @@
 
         <!-- ====== TAB: Simulator ====== -->
         <div class="tab-content" id="tab-simulator">
-            <div class="placeholder-tab">
-                <h3>Process Switch Simulator</h3>
-                <p>Coming in Phase 6. Switch between CNC / FDM / SLA and see how violations and costs change.</p>
+            <div class="controls">
+                <select id="simFrom">
+                    <option value="fdm">From: FDM</option>
+                    <option value="sla">From: SLA</option>
+                    <option value="cnc" selected>From: CNC</option>
+                    <option value="injection_molding">From: IM</option>
+                </select>
+                <select id="simTo">
+                    <option value="fdm" selected>To: FDM</option>
+                    <option value="sla">To: SLA</option>
+                    <option value="cnc">To: CNC</option>
+                    <option value="injection_molding">To: IM</option>
+                </select>
+                <button class="btn btn-primary" id="simBtn" onclick="runSimulation()">Simulate Switch</button>
             </div>
+            <div id="simPlaceholder" class="placeholder-tab">
+                <h3>Process Switch Simulator</h3>
+                <p>Select two processes and click <strong>Simulate Switch</strong> to see how violations, costs, and redesign steps change.</p>
+            </div>
+            <div id="simResults"></div>
         </div>
 
         <!-- ====== TAB: Recommend ====== -->
@@ -205,6 +221,7 @@
     <script src="/static/components/sustainability.js"></script>
     <script src="/static/components/decision_summary.js"></script>
     <script src="/static/components/review.js"></script>
+    <script src="/static/components/simulator.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 # Cadly v2 — Build Progress
 
-## Last Updated: 2026-02-06
-## Current Phase: Bug fixes complete, ready for UI polish then Phase 6
-## Last Commit: fix: fix 4 known bugs (hole depth, wall fix shells, corner validation, websocket)
+## Last Updated: 2026-02-06 (Session 4)
+## Current Phase: Hackathon polish — targeting 7 TartanHacks prize tracks
+## Last Commit: feat: add process switch simulator
 
 ## Completed:
 - [x] Phase 1: Core Infrastructure — DONE
@@ -10,12 +10,15 @@
 - [x] Phase 3: Cost Estimation — DONE
 - [x] Phase 4: API + UI — DONE
 - [x] Phase 5: Auto-Correct (R1) — DONE (all 3 fixes verified: hole, corner, wall)
-- [ ] Phase 6: Process Switch Simulator (R2) — IN PROGRESS (2 files created, not committed)
-- [ ] Phase 7: Machine + Material Recommendation (S1, S2)
-- [ ] Phase 8: Cost Dashboard (S3)
-- [ ] Phase 9: AI Design Review Board (R3)
-- [ ] Phase 10: Report Generator (S4)
-- [ ] Phase 11: Polish + Tests + Documentation
+- [x] Phase 12: Sustainability Module — DONE (waste, carbon, green score + Dedalus AI scoring)
+- [x] Phase 12 Polish: Equivalencies, breakdown cards, Dedalus error handling — DONE
+- [x] Phase 13: Decision Summary Panel — DONE
+- [x] Phase 14: AI Design Review Board (R3) — DONE (4 specialists + synthesis via Dedalus)
+- [x] Phase 15: Demo Polish — DONE (loading animations, transitions, branding, footer)
+- [x] Phase 6: Process Switch Simulator (R2) — DONE (redesign planner, comparison, API, UI)
+- [ ] Phase 7: Machine + Material Recommendation (S1, S2) — NOT STARTED
+- [ ] Phase 8: Cost Dashboard (S3) — PARTIAL (quantity slider exists, needs polish)
+- [ ] Phase 10: Report Generator (S4) — NOT STARTED
 
 ## Testing Status (Phases 1-5):
 - [x] Server starts on port 3000, health check returns fusion_connected: true
